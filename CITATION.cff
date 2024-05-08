@@ -1,0 +1,41 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: PyMultipact
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Sosoho-Abasi
+    family-names: Udongwo
+    email: soskey94@gmail.com
+    affiliation: University of Rostock
+identifiers:
+  - type: url
+    value: 'https://github.com/Dark-Elektron/PyMultipact'
+repository-code: 'https://github.com/Dark-Elektron/PyMultipact.git'
+abstract: >-
+  Multipacting is a phenomenon arising from the emission and
+  subsequent multiplication of charged particles in
+  accelerating radiofrequency (RF) cavities, which can limit
+  the achievable RF power. Predicting field levels at which
+  multipacting occurs is crucial for optimising cavity
+  geometries. This paper presents a new open-source Python
+  code for analysing multipacting in 2D axisymmetric cavity
+  structures. The code leverages the NGSolve framework to
+  solve the MEVP for the cavity's resonant modes'
+  electromagnetic (EM) fields. The relativistic Lorentz
+  force equation governing the motion of charged particles
+  is then integrated using the fields within the cavity.
+  Benchmarking against existing multipacting analysis tools
+  is performed to validate the code's accuracy.
+keywords:
+  - '#multipacting'
+  - '#ngsolve'
+  - '#cavity'
+  - '#radiofrequency'
+license: MIT
+version: 05.05.2024
+date-released: '2024-05-05'
