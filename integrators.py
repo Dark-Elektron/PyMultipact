@@ -414,7 +414,6 @@ class Integrators:
                 lost_particles_indx.append(indx_ob)
             if ptx[0] < self.zmin or ptx[0] > self.zmax:  # <- left and right boundaries
                 lost_particles_indx.append(indx_ob)
-
         # remove lost points
         return lost_particles_indx, reflected_particles_indx
 

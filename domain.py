@@ -122,9 +122,17 @@ class Domain:
             gfu.vec.data = self.eigenvecs[i]
 
             self.gfu_E.append(gfu)
+
             self.gfu_H.append(1j / (mu0 * w) * ng.curl(gfu))
 
     def draw(self):
+        """
+        Function to draw the deomain
+
+        Returns
+        -------
+
+        """
         Draw(self.domain)
 
     def draw_mesh(self):
