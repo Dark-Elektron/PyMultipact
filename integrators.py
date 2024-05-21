@@ -299,7 +299,7 @@ class Integrators:
         particles_dummy.save_old()
         particles_dummy.u += ku1 / 2
         particles_dummy.x += kx1 / 2
-        print('Now here')
+        print('Now here', mask)
         try:
             ku2, kx2 = np.zeros_like(particles.x), np.zeros_like(particles.x)
 
@@ -328,7 +328,7 @@ class Integrators:
         particles_dummy.u[mask] += ku2[mask] / 2
         particles_dummy.x[mask] += kx2[mask] / 2
 
-        print('Now here')
+        print('Now here', mask)
         try:
             ku3, kx3 = np.zeros_like(particles.x), np.zeros_like(particles.x)
             ku3[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h / 2, em,
@@ -357,7 +357,7 @@ class Integrators:
         particles_dummy.u[mask] += ku3[mask]
         particles_dummy.x[mask] += kx3[mask]
 
-        print('Now here')
+        print('Now here', mask)
         try:
             ku4, kx4 = np.zeros_like(particles.x), np.zeros_like(particles.x)
             ku4[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h, em,
@@ -387,8 +387,9 @@ class Integrators:
         particles_dummy.u[mask] += 1 / 6 * (ku1[mask] + 2 * ku2[mask] + 2 * ku3[mask] + ku4[mask])
         particles_dummy.x[mask] += 1 / 6 * (kx1[mask] + 2 * kx2[mask] + 2 * kx3[mask] + kx4[mask])
 
-        print('Now here')
+        print('Now here5', mask)
         # check for lost particles
+        print(particles_dummy.x)
         lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
         lpi_all.extend(lpi)
         rpi_all.extend(rpi)
@@ -397,7 +398,7 @@ class Integrators:
         if len(lpi_rpi_all) != 0:
             mask[np.sort(lpi_rpi_all)] = False
 
-        print('Now here')
+        print('Now here7', mask)
         # modify to only update particles not reflected or lost
         particles.u[mask] += 1 / 6 * (ku1[mask] + 2 * ku2[mask] + 2 * ku3[mask] + ku4[mask])
         particles.x[mask] += 1 / 6 * (kx1[mask] + 2 * kx2[mask] + 2 * kx3[mask] + kx4[mask])
@@ -446,15 +447,12 @@ class Integrators:
         x, u, phi = particles.x[mask], particles.u[mask], particles.phi[mask]
         # get e and b field from eigenmode analysis at particle current position
         #         print("\t\t Before lorentz")
-
         #         print(pos, scale)
         e = scale * em.e(self.mesh(x[:, 0], x[:, 1])) * np.exp(1j * (self.w * tn + phi))
         b = mu0 * scale * em.h(self.mesh(x[:, 0], x[:, 1])) * np.exp(1j * (self.w * tn + phi))
 
-        # k = q0/m0*np.sqrt(1 - (norm(u)/c0)**2)*(e.real + cross(u, b.real)-(1/c0**2)*(dot(u, e.real)*u))  # <- relativistic
         k = q0 / m0 * np.sqrt(1 - (self.norm(u) / c0) ** 2) * (
                 e.real + self.cross(u, b.real) - (1 / (c0 ** 2)) * (self.dot(u, e.real) * u))  # <- relativistic
-        #         print('\t\t lorentz force: ', time.time() - ss)
 
         return k
 
@@ -470,7 +468,6 @@ class Integrators:
         xsurf = particles_dummy.bounds
         #     # check if particle close to boundary
         res, indx = particles_dummy.distance(10)
-        #         ind_ = np.where(res <=  5e-2)
         ind_ = np.where(res <= c0 * dt)
         res, indx = res[ind_[0], ind_[1]], np.array(indx)[ind_[0], :]
         #     print('\t\t\t\t distance time:', time.time()-ss)
@@ -568,6 +565,7 @@ class Integrators:
                         lost_particles_indx.append(ind)
 
         # finally check if particle is at the other boundaries not the wall surface
+        print('chck this', lost_particles_indx, reflected_particles_indx)
         for indx_ob, ptx in enumerate(particles.x):
             if ptx[1] < self.rmin:  # <- bottom edge (rotation axis) check
                 lost_particles_indx.append(indx_ob)
@@ -598,7 +596,6 @@ class Integrators:
         x4, y4 = line2[1][:, 0], line2[1][:, 1]
 
         denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-        #     print('denonm: ', denom)
         #     if denom == 0:
         #        return False, (0, 0)
 
@@ -608,7 +605,7 @@ class Integrators:
         # get index of where condition is true. condition should be true at only one point but for the case that
         #  a line has one point on a surface node intersects two edges
         condition = np.where((tt >= 0) * (tt <= 1) * (uu >= 0) * (uu <= 1))[0]
-        #     print('condition', condition)
+        print('condition', condition)
 
         if len(condition) > 0:  # review for more complex geometry. a line that has one point on a surface node intersects two points.
             px, py = x1 + tt[condition[0]] * (x2 - x1), y1 + tt[condition[0]] * (y2 - y1)

@@ -24,6 +24,7 @@ c0 = 299792458
 
 class Domain:
     def __init__(self, boundary_file=None, field=None):
+        self.zmin, self.zmax, self.rmin, self.rmax = None, None, None, None
         self.eigen_freq = None
         self.K = None
         self.M = None
@@ -44,7 +45,7 @@ class Domain:
         # set default sey
         self.set_sey(r'sample_seys/sey')
 
-        self.zmin, self.zmax, self.rmin, self.rmax = [0, 0, 0, 0]
+        self.bc_zmin, self.bc_zmax, self.bc_rmin, self.bc_rmax = [0, 0, 0, 0]
         self.gfu_E = None
         self.gfu_H = None
         self.eigenvals, self.eigenvecs = None, None
@@ -65,7 +66,7 @@ class Domain:
             print("Please enter valid geometry path.", e)
 
     def set_boundary_conditions(self, zmin='PMC', zmax='PMC', rmin='PEC', rmax='PEC'):
-        self.zmin, self.zmax, self.rmin, self.rmax = [zmin, zmax, rmin, rmax]
+        self.bc_zmin, self.bc_zmax, self.bc_rmin, self.bc_rmax = [zmin, zmax, rmin, rmax]
 
     def mesh_domain(self, maxh=0.000577):
         wp = ngocc.WorkPlane()
@@ -85,6 +86,11 @@ class Domain:
         self.domain.edges.Min(ngocc.X).col = (1, 0, 0)
         self.domain.edges.Min(ngocc.Y).name = "rmin"
         self.domain.edges.Min(ngocc.Y).col = (1, 0, 0)
+        # get xmin, xmax, ymin
+        self.zmin = self.domain.vertices.Min(ngocc.X).p[0]
+        self.zmax = self.domain.vertices.Max(ngocc.X).p[0]
+        self.rmin = self.domain.vertices.Min(ngocc.Y).p[0]
+        self.rmax = self.domain.vertices.Max(ngocc.Y).p[0]
 
         geo = ngocc.OCCGeometry(self.domain, dim=2)
 
@@ -194,7 +200,7 @@ class Domain:
             epks_v = epks
 
         if phis is None:
-            phi_v = np.linspace(0, 2 * np.pi, 10)  # <- initial phase
+            phi_v = np.linspace(0, 2 * np.pi, 1)  # <- initial phase
         else:
             phi_v = phis
 
@@ -234,7 +240,7 @@ class Domain:
             em = EMField(copy.deepcopy(self.gfu_E[mode]), copy.deepcopy(self.gfu_H[mode]))
 
             # move particles with initial velocity. ensure all initial positions after first move lie inside the bounds
-            # particles.x = particles.x + particles.u * dt
+            particles.x = particles.x + particles.u * dt
 
             record = {}
             scale = epk  # <- scale Epk to 1 MV/m and multiply by sweep value
