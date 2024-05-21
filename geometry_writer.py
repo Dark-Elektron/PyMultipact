@@ -4,7 +4,7 @@ from icecream import ic
 from scipy.optimize import fsolve
 
 
-def drawCavity(folder=None):
+def drawCavity(folder=None, name=None):
     # 21578127116
     # A_m, B_m, a_m, b_m, Ri_m, L_m, Req_m = 73.52 * 1e-3, 131.75 * 1e-3, 106.25 * 1e-3, 118.7 * 1e-3, 150 * 1e-3, 187 * 1e-3, 369.63 * 1e-3
     # A_el, B_el, a_el, b_el, Ri_el, L_el, Req_el = 73.52 * 1e-3, 131.75 * 1e-3, 106.25 * 1e-3, 118.7 * 1e-3, 150 * 1e-3, 187 * 1e-3, 369.63 * 1e-3
@@ -68,12 +68,15 @@ def drawCavity(folder=None):
         [a_er + L_bp_r, Ri_er + 0.85 * b_er, L_er - A_er + L_bp_r, Req_er - 0.85 * B_er]),
                                     args=data,
                                     xtol=1.49012e-12)  # [a_m, b_m-0.3*b_m, L_m-A_m, Req_m-0.7*B_m] initial guess
-    default_folder = "D:\Dropbox\multipacting\MPGUI21"
+    default_folder = "."
 
     if folder is None:
         folder = default_folder
-    with open(fr'{folder}\geodata.n', 'w') as fil:
-    # with open(fr'{folder}\tesla_mid_cell.n', 'w') as fil:
+
+    if name is None:
+        name = 'geodata'
+
+    with open(fr'{folder}\{name}.n', 'w') as fil:
         fil.write("   2.0000000e-03   0.0000000e+00   0.0000000e+00   0.0000000e+00\n")
         fil.write("   1.25000000e-02   0.0000000e+00   0.0000000e+00   0.0000000e+00\n")  # a point inside the structure
         fil.write("  -3.1415927e+00  -2.7182818e+00   0.0000000e+00   0.0000000e+00\n")  # a point outside the structure
@@ -394,7 +397,7 @@ def drawCavity_flat_top(folder=None):
                                     args=data, fprime=jac,
                                     xtol=1.49012e-12)
 
-    default_folder = "D:\Dropbox\multipacting\MPGUI21"
+    default_folder = "."
 
     if folder is None:
         folder = default_folder
@@ -871,13 +874,8 @@ def arcTo(x_center, y_center, a, b, step, start, end, plot=True):
 
 if __name__ == '__main__':
 
-    drawCavity(r'D:\Dropbox\PyMultipact\sample_domains')
-    drawCavity(r'D:\Dropbox\multipacting\MPGUI21')
-    drawCavity(r'D:\Dropbox\CavityDesignHub\utils')
+    drawCavity(r'D:\Dropbox\PyMultipact\sample_domains', 'TESLA')
 
-
-    # drawCavity_flat_top(r'D:\Dropbox\CavityDesignHub\utils')
-    # drawCapacitor()
 
 
 
