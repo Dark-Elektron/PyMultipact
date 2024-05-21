@@ -24,12 +24,11 @@ c0 = 299792458
 
 class Domain:
     def __init__(self, boundary_file=None, field=None):
+        self.boundary = None
         self.mesh = None
         self.domain = None
-        cav_geom = pd.read_csv('sample_domains/tesla_mid_cell.n',
-                               header=None, skiprows=3, skipfooter=1, sep='\s+', engine='python')[[1, 0]]
-
-        self.boundary = np.array(list(cav_geom.itertuples(index=False, name=None)))
+        
+        self.define_boundary('sample_domains/tesla_mid_cell.n')
 
         self.particles = np.array([])
         if field is None:
@@ -47,12 +46,24 @@ class Domain:
         self.eigenvals, self.eigenvecs = None, None
 
         # define domain
-        self.define_domain()
+        self.mesh_domain()
+
+    def define_boundary(self, geopath):
+        if geopath is None:
+            print("Please enter geometry path.")
+            return
+        try:
+            cav_geom = pd.read_csv(geopath,
+                                   header=None, skiprows=3, skipfooter=1, sep='\s+', engine='python')[[1, 0]]
+            self.boundary = np.array(list(cav_geom.itertuples(index=False, name=None)))
+        except Exception as e:
+
+            print("Please enter valid geometry path.", e)
 
     def set_boundary_conditions(self, zmin='PMC', zmax='PMC', rmin='PEC', rmax='PEC'):
         self.zmin, self.zmax, self.rmin, self.rmax = [zmin, zmax, rmin, rmax]
 
-    def define_domain(self, maxh=0.000577):
+    def mesh_domain(self, maxh=0.000577):
         wp = ngocc.WorkPlane()
         wp.MoveTo(*self.boundary[0])
         for p in self.boundary[1:]:
