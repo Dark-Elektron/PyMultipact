@@ -24,6 +24,10 @@ c0 = 299792458
 
 class Domain:
     def __init__(self, boundary_file=None, field=None):
+        self.eigen_freq = None
+        self.K = None
+        self.M = None
+        self.precond = None
         self.boundary = None
         self.mesh = None
         self.domain = None
@@ -94,28 +98,31 @@ class Domain:
         fes = ng.HCurl(self.mesh, order=1, dirichlet='default')
         u, v = fes.TnT()
 
-        self.a = ng.BilinearForm(ng.y * ng.curl(u) * ng.curl(v) * ng.dx).Assemble()
-        self.m = ng.BilinearForm(ng.y * u * v * ng.dx).Assemble()
+        a = ng.BilinearForm(ng.y * ng.curl(u) * ng.curl(v) * ng.dx).Assemble()
+        m = ng.BilinearForm(ng.y * u * v * ng.dx).Assemble()
 
         apre = ng.BilinearForm(ng.y * ng.curl(u) * ng.curl(v) * ng.dx + ng.y * u * v * ng.dx)
         pre = ng.Preconditioner(apre, "direct", inverse="sparsecholesky")
 
         with ng.TaskManager():
-            self.a.Assemble()
-            self.m.Assemble()
+            a.Assemble()
+            m.Assemble()
             apre.Assemble()
 
             # build gradient matrix as sparse matrix (and corresponding scalar FESpace)
             gradmat, fesh1 = fes.CreateGradient()
             gradmattrans = gradmat.CreateTranspose()  # transpose sparse matrix
-            math1 = gradmattrans @ self.m.mat @ gradmat  # multiply matrices
+            math1 = gradmattrans @ m.mat @ gradmat  # multiply matrices
             math1[0, 0] += 1  # fix the 1-dim kernel
             invh1 = math1.Inverse(inverse="sparsecholesky", freedofs=fesh1.FreeDofs())
             # build the Poisson projector with operator Algebra:
-            proj = ng.IdentityMatrix() - gradmat @ invh1 @ gradmattrans @ self.m.mat
+            proj = ng.IdentityMatrix() - gradmat @ invh1 @ gradmattrans @ m.mat
             projpre = proj @ pre.mat
 
-            self.eigenvals, self.eigenvecs = ng.solvers.PINVIT(self.a.mat, self.m.mat, pre=projpre, num=3, maxit=20,
+            self.K = a.mat
+            self.M = m.mat
+            self.precond = pre.mat
+            self.eigenvals, self.eigenvecs = ng.solvers.PINVIT(a.mat, m.mat, pre=projpre, num=3, maxit=20,
                                                                printrates=False)
 
         # print out eigenvalues
@@ -166,6 +173,8 @@ class Domain:
 
     def analyse_multipacting(self, mode=1, init_pos=None, epks=None, phis=None, v_init=2, init_points=None,
                              integrator='rk4'):
+        self.fig, self.ax = plt.subplots()
+        lmbda = c0 / (self.eigen_freq[mode] * 1e6)
         if self.sey is None:
             print("Secondary emission yield not defined, using default sey.")
 
@@ -175,13 +184,12 @@ class Domain:
         print(self.boundary)
         xpnts_surf = self.boundary[(self.boundary[:, 1] > 0) & (self.boundary[:, 0] > min(self.boundary[:, 0])) & (
                     self.boundary[:, 0] < max(self.boundary[:, 0]))]
-        plt.plot(xpnts_surf[:, 0], xpnts_surf[:, 1])
-        plt.show()
+        self.ax.plot(xpnts_surf[:, 0], xpnts_surf[:, 1])
         Esurf = [ng.Norm(self.gfu_E[mode])(self.mesh(xi, yi)) for (xi, yi) in xpnts_surf]
         Epk = (max(Esurf))
 
         if epks is None:
-            epks_v = 1 / Epk * 1e6 * np.linspace(47, 80, 1)
+            epks_v = 1 / Epk * 1e6 * np.linspace(42.5, 80, 1)
         else:
             epks_v = epks
 
@@ -191,7 +199,7 @@ class Domain:
             phi_v = phis
 
         if init_pos is None:
-            init_pos = [-0.00025, 0.00025]
+            init_pos = [-0.00025, -0.0002]
 
         # get surface points
         pec_boundary = self.mesh.Boundaries("default")
@@ -199,7 +207,6 @@ class Domain:
         bel_unique = list(set(itertools.chain(*bel)))
         xpnts_surf = sorted([self.mesh.vertices[xy.nr].point for xy in bel_unique])
         xsurf = np.array(xpnts_surf)
-        print(xsurf)
 
         # define one internal point
         xin = [0, 0]
@@ -227,7 +234,7 @@ class Domain:
             em = EMField(copy.deepcopy(self.gfu_E[mode]), copy.deepcopy(self.gfu_H[mode]))
 
             # move particles with initial velocity. ensure all initial positions after first move lie inside the bounds
-            particles.x = particles.x + particles.u * dt
+            # particles.x = particles.x + particles.u * dt
 
             record = {}
             scale = epk  # <- scale Epk to 1 MV/m and multiply by sweep value
@@ -239,6 +246,8 @@ class Domain:
                     particles.update_record()
                 counter += 1
                 t += dt
+
+            self.calculate_distance_function(particles, lmbda)
             particles_objects.append(particles)
 
             if len(particles.nhit) == 0:
@@ -249,10 +258,20 @@ class Domain:
             particles_left.append(len(particles.bright_set))
             print(f"Epk: {epk * Epk * 1e-6} MV/m, particles in bright set: {len(particles.bright_set)}")
 
+        plt.show()
         print("Done with multipacting analysis.")
 
     def set_sey(self, sey_filepath):
         self.sey = SEY(sey_filepath)
+
+    def calculate_distance_function(self, particles, lmbda):
+        kappa = lmbda / (2 * np.pi)
+        # calculate distance function
+        for path_i in range(len(particles.bright_set)):
+            x_n, phi_n = particles.bright_set[path_i][:, 0:2], particles.bright_set[path_i][:, 2]
+            df = np.sqrt(np.linalg.norm(x_n[-1] - x_n[0]) ** 2 + kappa * np.linalg.norm(
+                np.exp(1j * phi_n[-1]) - np.exp(1j * phi_n[0])) ** 2)
+            particles.df_n[path_i].append(df)
 
     def get_sey(self):
         return self.sey

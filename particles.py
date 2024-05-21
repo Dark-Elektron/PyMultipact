@@ -42,8 +42,8 @@ class Particles:
         self.pt_normals = np.array(self.pt_normals.tolist() * M)
 
         # convert velocity from eV to m/s
-        init_v = np.sqrt(2 * init_v * q0 / m0)
-        self.u = self.pt_normals * init_v
+        self.init_v = np.sqrt(2 * init_v * q0 / m0)
+        self.u = self.pt_normals * self.init_v
 
         self.phi = np.atleast_2d(np.repeat(phi, self.len)).T
 
@@ -69,6 +69,7 @@ class Particles:
         # hit energy
         self.E = [[] for ii in range(len(self.x))]
         self.n_secondaries = [[] for ii in range(len(self.x))]
+        self.df_n = [[] for ii in range(len(self.x))]
 
         self.record = [self.x]
         self.lost_particles = []
@@ -87,28 +88,11 @@ class Particles:
         self.phi_temp = copy.deepcopy(self.phi)
 
     def distance(self, n):
-
         norms = np.linalg.norm(self.x[:, None] - self.bounds, axis=-1)
         closest_dist_to_surface = norms.min(axis=1)
         indx = norms.argsort(axis=1).T[0:n, :]
 
         return np.atleast_2d(closest_dist_to_surface).T, indx.T.tolist()
-
-    # def distance2(self, n):
-    #     closest_dist_to_surface1 = []
-    #     indx1 = []
-    #     for xx, xx_old in zip(self.x, self.x_old):
-    #         box_bound = self.bounds[(self.bounds[:, 0] > min(xx[0], xx_old[0]) - 0.005) &
-    #                                 (self.bounds[:, 0] < max(xx[0], xx_old[0]) + 0.005) &
-    #                                 (self.bounds[:, 1] > min(xx[1], xx_old[1]) - 0.01) &
-    #                                 (self.bounds[:, 1] < max(xx[1], xx_old[1]) + 0.01)]
-    #         #             print(len(box_bound), xx, xx_old)
-    #         res = np.linalg.norm(xx - box_bound, axis=1)
-    #
-    #     #             closest_dist_to_surface1.append(np.min(res))
-    #     #             indx1.append([list(np.argpartition(res, n)[0:n])][0])  # <- index of two closest surface points
-    #
-    #     return np.atleast_2d(self.closest_dist_to_surface).T, indx.T.tolist()
 
     def remove(self, ind, bright='no'):
         if bright != 'yes':
@@ -176,17 +160,18 @@ class Particles:
         self.record.append(self.x)
 
     def update_hit_count(self, inds):
+        removed_inds = []
         self.nhit[inds] = self.nhit[inds] + 1
-
         # sort inds to start deleting from largest index
         inds.sort(reverse=True)
         # check if nhit = 20 and remove from main set and add to bright set
         for ind in inds:
             if self.nhit[ind] == 20:
                 self.bright_set.append(self.paths[[ii * len(self.x) + np.array(ind) for ii in range(self.paths_count)]])
-
                 # remove the index from main set
                 self.remove([ind], bright='yes')
+                removed_inds.append(ind)
+        return removed_inds
 
     @staticmethod
     def get_cmap(n, name='jet'):
@@ -195,3 +180,7 @@ class Particles:
         RGB color; the keyword argument name must be a standard mpl colormap name.
         '''
         return cm.get_cmap(name, n)
+
+    def trace(self, ax):
+        for xx_old, xx in zip(self.x_old, self.x):
+            ax.plot([xx[0], xx_old[0]], [xx[1], xx_old[1]], color='g', marker='o', ms=5, zorder=10000)

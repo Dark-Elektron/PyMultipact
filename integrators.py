@@ -18,6 +18,7 @@ c0 = 299792458
 
 class Integrators:
     def __init__(self, domain, mode):
+        self.domain = domain
         self.mesh = domain.mesh
         print(domain.eigen_freq[mode] * 1e6)
         self.w = 2 * np.pi * domain.eigen_freq[mode] * 1e6
@@ -170,119 +171,256 @@ class Integrators:
             return False
         self.plot_path(particles)
 
-    def rk4(self, particles, tn, h, em, scale, sey):
-        #         start = time.time()
-        # k1
-        ku1 = h * self.lorentz_force(particles, tn, em, scale)
-        kx1 = h * particles.u
-        print('Strat')
-        #         ss = time.time()
-        particles_dummy = copy.deepcopy(particles)
+    # def rk4(self, particles, tn, h, em, scale, sey):
+    #     #         start = time.time()
+    #     # k1
+    #     ku1 = h * self.lorentz_force(particles, tn, em, scale)
+    #     kx1 = h * particles.u
+    #     print('Strat')
+    #     #         ss = time.time()
+    #     particles_dummy = copy.deepcopy(particles)
+    #
+    #     particles_dummy.save_old()
+    #     particles_dummy.u += ku1 / 2
+    #     particles_dummy.x += kx1 / 2
+    #
+    #     try:
+    #         print('In here 1')
+    #         ku2 = h * self.lorentz_force(particles_dummy, tn + h / 2, em,
+    #                                      scale)  # <- particles dummy = particles.u + kn
+    #         kx2 = h * (particles.u + ku1 / 2)
+    #     except:
+    #         # take full step - euler
+    #         particles.u = particles.u + ku1
+    #         particles.x = particles.x + kx1
+    #
+    #         lpi, rpi = self.hit_bound(particles, tn, h, em, scale, sey)
+    #
+    #         if len(rpi) != 0:
+    #             particles.update_hit_count(list(set(rpi)))
+    #
+    #         if len(lpi) != 0:
+    #             particles.remove(lpi)
+    #
+    #         self.plot_path(particles, tn)
+    #         print('Return 2')
+    #         return
+    #
+    #     particles_dummy = copy.deepcopy(particles)
+    #
+    #     particles_dummy.save_old()
+    #     particles_dummy.u += ku2 / 2
+    #     particles_dummy.x += kx2 / 2
+    #
+    #     try:
+    #         print('In here 3')
+    #         ku3 = h * self.lorentz_force(particles_dummy, tn + h / 2, em,
+    #                                      scale)  # <- particles dummy = particles.u + kn
+    #         kx3 = h * (particles.u + ku2 / 2)
+    #     except:
+    #         # take full step - euler
+    #         particles.u = particles.u + ku1
+    #         particles.x = particles.x + kx1
+    #
+    #         lpi, rpi = self.hit_bound(particles, tn, h, em, scale, sey)
+    #
+    #         if len(rpi) != 0:
+    #             particles.update_hit_count(list(set(rpi)))
+    #
+    #         if len(lpi) != 0:
+    #             particles.remove(lpi)
+    #
+    #         self.plot_path(particles, tn)
+    #         print('Return 2')
+    #
+    #         return
+    #
+    #     particles_dummy = copy.deepcopy(particles)
+    #
+    #     particles_dummy.save_old()
+    #     particles_dummy.u += ku3
+    #     particles_dummy.x += kx3
+    #
+    #     try:
+    #         print('In here 4')
+    #         ku4 = h * self.lorentz_force(particles_dummy, tn + h, em, scale)  # <- particles dummy = particles.u + kn
+    #         kx4 = h * particles_dummy.u
+    #     except:
+    #         # take full step - euler
+    #         particles.u = particles.u + ku1
+    #         particles.x = particles.x + kx1
+    #
+    #         lpi, rpi = self.hit_bound(particles, tn, h, em, scale, sey)
+    #
+    #         if len(rpi) != 0:
+    #             particles.update_hit_count(list(set(rpi)))
+    #
+    #         if len(lpi) != 0:
+    #             particles.remove(lpi)
+    #
+    #         self.plot_path(particles, tn)
+    #         print('Return 3')
+    #
+    #         return
+    #
+    #     particles.u = particles.u + 1 / 6 * (ku1 + 2 * ku2 + 2 * ku3 + ku4)
+    #     particles.x = particles.x + 1 / 6 * (kx1 + 2 * kx2 + 2 * kx3 + kx4)
+    #
+    #     # check for lost particles
+    #     lpi, rpi = self.hit_bound(particles, tn, h, em, scale, sey)
+    #
+    #     if len(rpi) != 0:
+    #         particles.update_hit_count(list(set(rpi)))
+    #
+    #     if len(lpi) != 0:
+    #         particles.remove(lpi)
+    #
+    #     # check if all particles are lost
+    #     if particles.len == 0:
+    #         print('Return 54')
+    #         return False
+    #     #         print("rk4 exec time: ", time.time() - start)
+    #     #         print('='*80)
+    #
+    #     self.plot_path(particles, tn)
+    #     print('Finish')
 
+    def rk4(self, particles, tn, h, em, scale, sey):
+        print(particles.x)
+        lpi_all = []
+        rpi_all = []
+        lpi_rpi_all = []
+
+        mask = np.ones(len(particles.x), dtype=bool)
+        # k1
+        ku1 = h * self.lorentz_force(particles, mask, tn, em, scale)
+        kx1 = h * particles.u
+        particles_dummy = copy.deepcopy(particles)
         particles_dummy.save_old()
         particles_dummy.u += ku1 / 2
         particles_dummy.x += kx1 / 2
-
+        print('Now here')
         try:
-            print('In here 1')
-            ku2 = h * self.lorentz_force(particles_dummy, tn + h / 2, em,
-                                         scale)  # <- particles dummy = particles.u + kn
-            kx2 = h * (particles.u + ku1 / 2)
-        except:
-            # take full step - euler
-            particles.u = particles.u + ku1
-            particles.x = particles.x + kx1
+            ku2, kx2 = np.zeros_like(particles.x), np.zeros_like(particles.x)
 
-            lpi, rpi = self.hit_bound(particles, tn, h, em, scale, sey)
+            ku2[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h / 2, em, scale)  # <- particles dummy = particles.u + kn
+            kx2[mask] += h * (particles_dummy.u[mask])
+        except Exception as e:
+            print('EXCEPTION1:: ')
+            lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
+            lpi_all.extend(lpi)
+            rpi_all.extend(rpi)
+            lpi_rpi_all = lpi_all + rpi_all
 
-            if len(rpi) != 0:
-                particles.update_hit_count(list(set(rpi)))
+            if len(lpi_rpi_all) != 0:
+                mask[np.sort(lpi_rpi_all)] = False
 
-            if len(lpi) != 0:
-                particles.remove(lpi)
+            particles_dummy = copy.deepcopy(particles)
+            particles_dummy.save_old()
 
-            self.plot_path(particles, tn)
-            print('Return 2')
-            return
+            ku2, kx2 = np.zeros_like(particles.x), np.zeros_like(particles.x)
+            ku2[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h / 2, em,
+                                                     scale)  # <- particles dummy = particles.u + kn
+            kx2[mask] += h * (particles_dummy.u[mask] + ku1[mask] / 2)
 
         particles_dummy = copy.deepcopy(particles)
-
         particles_dummy.save_old()
-        particles_dummy.u += ku2 / 2
-        particles_dummy.x += kx2 / 2
+        particles_dummy.u[mask] += ku2[mask] / 2
+        particles_dummy.x[mask] += kx2[mask] / 2
 
+        print('Now here')
         try:
-            print('In here 3')
-            ku3 = h * self.lorentz_force(particles_dummy, tn + h / 2, em,
-                                         scale)  # <- particles dummy = particles.u + kn
-            kx3 = h * (particles.u + ku2 / 2)
+            ku3, kx3 = np.zeros_like(particles.x), np.zeros_like(particles.x)
+            ku3[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h / 2, em,
+                                                     scale)  # <- particles dummy = particles.u + kn
+            kx3[mask] += h * (particles_dummy.u[mask])
         except:
-            # take full step - euler
-            particles.u = particles.u + ku1
-            particles.x = particles.x + kx1
+            print('EXCEPTION2:: ')
+            lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
+            lpi_all.extend(lpi)
+            rpi_all.extend(rpi)
 
-            lpi, rpi = self.hit_bound(particles, tn, h, em, scale, sey)
+            lpi_rpi_all = lpi_all + rpi_all
+            if len(lpi_rpi_all) != 0:
+                mask[np.sort(lpi_rpi_all)] = False
 
-            if len(rpi) != 0:
-                particles.update_hit_count(list(set(rpi)))
+            particles_dummy = copy.deepcopy(particles)
+            particles_dummy.save_old()
 
-            if len(lpi) != 0:
-                particles.remove(lpi)
-
-            self.plot_path(particles, tn)
-            print('Return 2')
-
-            return
+            ku3, kx3 = np.zeros_like(particles.x), np.zeros_like(particles.x)
+            ku3[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h / 2, em,
+                                                     scale)  # <- particles dummy = particles.u + kn
+            kx3[mask] += h * (particles_dummy.u[mask] + ku1[mask] / 2)
 
         particles_dummy = copy.deepcopy(particles)
-
         particles_dummy.save_old()
-        particles_dummy.u += ku3
-        particles_dummy.x += kx3
+        particles_dummy.u[mask] += ku3[mask]
+        particles_dummy.x[mask] += kx3[mask]
 
+        print('Now here')
         try:
-            print('In here 4')
-            ku4 = h * self.lorentz_force(particles_dummy, tn + h, em, scale)  # <- particles dummy = particles.u + kn
-            kx4 = h * particles_dummy.u
+            ku4, kx4 = np.zeros_like(particles.x), np.zeros_like(particles.x)
+            ku4[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h, em,
+                                                     scale)  # <- particles dummy = particles.u + kn
+            kx4[mask] += h * (particles_dummy.u[mask] + ku3[mask])
         except:
-            # take full step - euler
-            particles.u = particles.u + ku1
-            particles.x = particles.x + kx1
+            print('EXCEPTION3:: ', mask, len(particles.x), lpi_rpi_all)
+            lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
+            lpi_all.extend(lpi)
+            rpi_all.extend(rpi)
 
-            lpi, rpi = self.hit_bound(particles, tn, h, em, scale, sey)
+            lpi_rpi_all = lpi_all + rpi_all
+            # print(mask, lpi, rpi, lpi_all, rpi_all, lpi_rpi_all)
+            if len(lpi_rpi_all) != 0:
+                mask[np.sort(lpi_rpi_all)] = False
 
-            if len(rpi) != 0:
-                particles.update_hit_count(list(set(rpi)))
+            particles_dummy = copy.deepcopy(particles)
+            particles_dummy.save_old()
 
-            if len(lpi) != 0:
-                particles.remove(lpi)
+            ku4, kx4 = np.zeros_like(particles.x), np.zeros_like(particles.x)
+            ku4[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h, em,
+                                                scale)  # <- particles dummy = particles.u + kn
+            kx4[mask] += h * (particles_dummy.u[mask] + ku3[mask])
 
-            self.plot_path(particles, tn)
-            print('Return 3')
+        particles_dummy = copy.deepcopy(particles)
+        particles_dummy.save_old()
+        particles_dummy.u[mask] += 1 / 6 * (ku1[mask] + 2 * ku2[mask] + 2 * ku3[mask] + ku4[mask])
+        particles_dummy.x[mask] += 1 / 6 * (kx1[mask] + 2 * kx2[mask] + 2 * kx3[mask] + kx4[mask])
 
-            return
-
-        particles.u = particles.u + 1 / 6 * (ku1 + 2 * ku2 + 2 * ku3 + ku4)
-        particles.x = particles.x + 1 / 6 * (kx1 + 2 * kx2 + 2 * kx3 + kx4)
-
+        print('Now here')
         # check for lost particles
-        lpi, rpi = self.hit_bound(particles, tn, h, em, scale, sey)
+        lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
+        lpi_all.extend(lpi)
+        rpi_all.extend(rpi)
 
-        if len(rpi) != 0:
-            particles.update_hit_count(list(set(rpi)))
+        lpi_rpi_all = lpi_all + rpi_all
+        if len(lpi_rpi_all) != 0:
+            mask[np.sort(lpi_rpi_all)] = False
 
-        if len(lpi) != 0:
-            particles.remove(lpi)
+        print('Now here')
+        # modify to only update particles not reflected or lost
+        particles.u[mask] += 1 / 6 * (ku1[mask] + 2 * ku2[mask] + 2 * ku3[mask] + ku4[mask])
+        particles.x[mask] += 1 / 6 * (kx1[mask] + 2 * kx2[mask] + 2 * kx3[mask] + kx4[mask])
 
+        print('Now here', rpi_all, lpi_all, lpi_rpi_all)
+        print(particles.x)
+        removed_inds = np.array([])
+        if len(rpi_all) != 0:
+            removed_inds = particles.update_hit_count(list(set(rpi_all)))
+
+        if len(lpi_all) != 0:
+            particles.remove(self.update_lpi(lpi_all, removed_inds))
+
+        print('Now here')
         # check if all particles are lost
         if particles.len == 0:
-            print('Return 54')
+            print('Now here, all particles lost!')
             return False
-        #         print("rk4 exec time: ", time.time() - start)
-        #         print('='*80)
-
         self.plot_path(particles, tn)
-        print('Finish')
+
+        print("Done rk4", len(particles.x), '\n', particles.x)
+        particles.trace(self.domain.ax)
+        print('=='*50)
 
     def rkf45(self):
         pass
@@ -304,17 +442,20 @@ class Integrators:
     def leapfrog(self):
         pass
 
-    def lorentz_force(self, particles, tn, em, scale):
+    def lorentz_force(self, particles, mask, tn, em, scale):
+        x, u, phi = particles.x[mask], particles.u[mask], particles.phi[mask]
         # get e and b field from eigenmode analysis at particle current position
-        e = scale * em.e(self.mesh(particles.x[:, 0], particles.x[:, 1])) * np.exp(1j * (self.w * tn + particles.phi))
-        b = mu0 * scale * em.h(self.mesh(particles.x[:, 0], particles.x[:, 1])) * np.exp(
-            1j * (self.w * tn + particles.phi))
+        #         print("\t\t Before lorentz")
+
+        #         print(pos, scale)
+        e = scale * em.e(self.mesh(x[:, 0], x[:, 1])) * np.exp(1j * (self.w * tn + phi))
+        b = mu0 * scale * em.h(self.mesh(x[:, 0], x[:, 1])) * np.exp(1j * (self.w * tn + phi))
 
         # k = q0/m0*np.sqrt(1 - (norm(u)/c0)**2)*(e.real + cross(u, b.real)-(1/c0**2)*(dot(u, e.real)*u))  # <- relativistic
-        k = q0 / m0 * np.sqrt(1 - (self.norm(particles.u) / c0) ** 2) * (
-                e.real + self.cross(particles.u, b.real) - (1 / (c0 ** 2)) * (
-                self.dot(particles.u, e.real) * particles.u))  # <- relativistic
-        #         print('\t\t lorentz force: ', time.time() - ss, len(pos))
+        k = q0 / m0 * np.sqrt(1 - (self.norm(u) / c0) ** 2) * (
+                e.real + self.cross(u, b.real) - (1 / (c0 ** 2)) * (self.dot(u, e.real) * u))  # <- relativistic
+        #         print('\t\t lorentz force: ', time.time() - ss)
+
         return k
 
     def plot_path(self, particles, tn=None):
@@ -325,68 +466,84 @@ class Integrators:
         particles.paths = np.vstack((particles.paths, np.hstack((particles.x, self.w * tn + particles.phi))))
         particles.paths_count += 1
 
-    def hit_bound(self, particles, t, dt, em, scale, sey):
-        print('in hig bound')
-        xsurf = particles.bounds
-
-        # check if particle close to boundary
-        res, indx = particles.distance(100)
+    def hit_bound(self, particles, particles_dummy, mask, t, dt, em, scale, sey):
+        xsurf = particles_dummy.bounds
+        #     # check if particle close to boundary
+        res, indx = particles_dummy.distance(10)
+        #         ind_ = np.where(res <=  5e-2)
+        ind_ = np.where(res <= c0 * dt)
+        res, indx = res[ind_[0], ind_[1]], np.array(indx)[ind_[0], :]
+        #     print('\t\t\t\t distance time:', time.time()-ss)
 
         lost_particles_indx = []
         reflected_particles_indx = []
-        #     vmag = np.linalg.norm(particles.u, axis=1)
-        for ind, (r, idx) in enumerate(zip(res, indx)):
-            if r < 5e-2:  # point at boundary, calculate new field value
+        for ind, r, idx in zip(ind_[0], res, indx):
+            #             if r < 5e-2 and mask[ind]:  # point at boundary, calculate new field value
+            if r < c0 * dt and mask[ind]:  # point at boundary, calculate new field value
                 # check if point is inside or outside of region
                 # get surface points neighbours
                 surf_pts_neigs = self.get_neighbours(xsurf, idx)
+
                 # check for intersection
                 # get intersection with old point. loop through points again.
                 # the surface edge a line between an outside point and the origin intersects
                 # might be different from that with which the line between old and new point intersects
 
-                line11 = (particles.x[ind], particles.x_old[ind])  # <- straight line btw current and previous points
+                line11 = (particles_dummy.x[ind],
+                          particles_dummy.x_old[ind])  # <- straight line btw current and previous points
                 line22 = surf_pts_neigs[1:], surf_pts_neigs[:-1]
-                #             print(line11)
+
                 bool_intc_p, x_intc_p, intc_indx = self.segment_intersection(line11, line22)
-
+                plt.plot(np.array(line11).T[0], np.array(line11).T[1], c='b', marker='o', zorder=2000)
+                plt.plot(np.array(line22).T[0], np.array(line22).T[1], c='r', marker='o')
+                plt.show()
+                #             print(ind, bool_intc_p)
+                #             sys.exit()
+                print(bool_intc_p)
                 if bool_intc_p:
-
-                    dt_frac = np.linalg.norm(x_intc_p - particles.x_old[ind]) / np.linalg.norm(
-                        particles.x[ind] - particles.x_old[ind])
+                    dt_frac = np.linalg.norm(x_intc_p - particles_dummy.x_old[ind]) / np.linalg.norm(
+                        particles_dummy.x[ind] - particles_dummy.x_old[ind])
                     t_frac = t - dt * (1 - dt_frac)
 
+                    # Advance particle to surface
                     #  calculate field values at this time which is a (fraction of dt) + t
                     e = scale * np.array([em.e(self.mesh(*x_intc_p))]) * np.exp(
-                        1j * (self.w * t_frac + particles.phi[ind]))
+                        1j * (self.w * t_frac + particles_dummy.phi[ind]))
                     b = mu0 * scale * np.array([em.h(self.mesh(*x_intc_p))]) * np.exp(
-                        1j * (self.w * t_frac + particles.phi[ind]))
+                        1j * (self.w * t_frac + particles_dummy.phi[ind]))
 
                     # check if the e-field surface normal is close to zero indicating a possible change in field
-                    particles.x_temp[ind] = particles.x_old[ind] + particles.u[ind] * dt * dt_frac
-
                     line22 = np.array(line22)[:, intc_indx]
                     line22 = line22[line22[:, 0].argsort()]
                     line22_normal = -np.array([-(line22[1][1] - line22[0][1]), line22[1][0] - line22[0][0]])
                     line22_normal = line22_normal / np.linalg.norm(line22_normal)
+                    plt.plot(np.array(line11).T[0], np.array(line11).T[1], c='k', marker='o', zorder=2000)
+                    plt.plot(np.array(line22).T[0], np.array(line22).T[1], c='g', marker='o')
+                    # plt.show()
 
                     e_dot_surf_norm = np.dot(e.real, line22_normal)
                     if e_dot_surf_norm >= 0:
-                        particles.u_temp[ind] = particles.u_old[ind] + q0 / m0 * np.sqrt(
-                            1 - (self.norm([particles.u_old[ind]]) / c0) ** 2) * (
-                                                        e.real + self.cross([particles.u_old[ind]], b.real) - (
-                                                        1 / c0 ** 2) * (self.dot([particles.u_old[ind]], e.real) *
-                                                                        particles.u_old[ind])) * dt * dt_frac
+                        particles_dummy.u_temp[ind] = particles_dummy.u_old[ind] + q0 / m0 * np.sqrt(
+                            1 - (self.norm([particles_dummy.u_old[ind]]) / c0) ** 2) * (
+                                                              e.real + self.cross([particles_dummy.u_old[ind]],
+                                                                                  b.real) - (
+                                                                      1 / c0 ** 2) * (
+                                                                      self.dot([particles_dummy.u_old[ind]],
+                                                                               e.real) *
+                                                                      particles_dummy.u_old[
+                                                                          ind])) * dt * dt_frac
 
                         # check if conditions support secondary electron yield
                         # calculate electron energy
-                        umag = np.linalg.norm(particles.u_temp[ind])
+                        umag = np.linalg.norm(particles_dummy.u_temp[ind])
                         gamma = 1 / (np.sqrt(1 - (umag / c0) ** 2))
                         pm = gamma * m0 * umag
                         Eq = (gamma - 1) * m0 * c0 ** 2 * 6.241509e18  # 6.241509e18 Joules to eV factor
-                        particles.E[ind].append(Eq)
-                        print('\t\t\t\t Energy: ', Eq, "eV", "(e_field, phi): ", "nhit: ", particles.nhit[ind])
 
+                        # update main particles array
+                        particles.E[ind].append(Eq)
+
+                        # calculate number of secondary electrons
                         if sey.Emin < Eq < sey.Emax:
                             particles.n_secondaries[ind].append(float(sey.sey(Eq)))
                         else:
@@ -394,15 +551,17 @@ class Integrators:
 
                         # calculate new position using 1-dt_frac, u_temp at intersection and x_temp
                         u_emission = line22_normal * np.sqrt(
-                            2 * particles.v_init * q0 / m0)  # <- velocity with which particle is emitted from surface
-                        # use impact energy to calculate new emission velocity
-                        # This assumes that the collision is perfectly elastic
-                        #                     u_emission = line22_normal * np.sqrt(2 * Eq * q0 / m0)
+                            2 * particles.init_v * q0 / m0)  # <- velocity with which particle is emitted from surface
 
-                        # particles.u[ind] = u_emission + q0/m0*(e.real + cross([u_emission], b.real))*dt*(1-dt_frac)
+                        # use impact energy to calculate velocity of secondary particles
+                        # to be implemeented
+                        #                     print(u_emission, q0 / m0 * np.sqrt(1 - (norm([u_emission]) / c0) ** 2) * (
+                        #                                        e.real + cross([u_emission], b.real) - (1 / c0 ** 2) * (
+                        #                                        dot([u_emission], e.real) * u_emission)))
                         particles.u[ind] = u_emission + q0 / m0 * np.sqrt(1 - (self.norm([u_emission]) / c0) ** 2) * (
                                 e.real + self.cross([u_emission], b.real) - (1 / c0 ** 2) * (
                                 self.dot([u_emission], e.real) * u_emission)) * dt * (1 - dt_frac)
+
                         particles.x[ind] = x_intc_p + particles.u[ind] * dt * (1 - dt_frac)
                         reflected_particles_indx.append(ind)
                     else:
@@ -414,7 +573,7 @@ class Integrators:
                 lost_particles_indx.append(indx_ob)
             if ptx[0] < self.zmin or ptx[0] > self.zmax:  # <- left and right boundaries
                 lost_particles_indx.append(indx_ob)
-        # remove lost points
+
         return lost_particles_indx, reflected_particles_indx
 
     @staticmethod
@@ -446,11 +605,12 @@ class Integrators:
         tt = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom
         uu = ((x1 - x3) * (y1 - y2) - (y1 - y3) * (x1 - x2)) / denom
 
-        # get index of where condition is true. condition should be true at only one point
+        # get index of where condition is true. condition should be true at only one point but for the case that
+        #  a line has one point on a surface node intersects two edges
         condition = np.where((tt >= 0) * (tt <= 1) * (uu >= 0) * (uu <= 1))[0]
         #     print('condition', condition)
 
-        if len(condition) == 1:  # <- multiply conditions to combine
+        if len(condition) > 0:  # review for more complex geometry. a line that has one point on a surface node intersects two points.
             px, py = x1 + tt[condition[0]] * (x2 - x1), y1 + tt[condition[0]] * (y2 - y1)
             return True, np.array([px, py]), condition[0]
         else:
@@ -463,3 +623,36 @@ class Integrators:
 
     def collision(self, active_interval):
         pass
+
+    def indices_corrector(self, ind1, ind2):
+        array_comp = np.array(ind2)
+        for ii in ind1:
+            array_comp += (array_comp >= ii) * 1
+        return array_comp
+
+    def compose_indices(self, indices_array):
+        composed_indices = np.array([])
+        for i in range(len(indices_array) - 1):
+            if i == 0:
+                xx = np.array(indices_array[i])
+            else:
+                xx = composed_indices
+
+            array_comp = np.array(indices_array[i + 1])
+            for ii in xx:
+                array_comp += (array_comp >= ii) * 1
+            composed_indices = np.concatenate((xx, array_comp))
+
+        return composed_indices
+
+    def update_lpi(self, lpi, removed_inds):
+        # update lpi with removed indices from rpi
+        counts = np.array([sum(1 for num in removed_inds if num < x) for x in lpi])
+        lpi = np.array(lpi) - counts
+        return lpi
+
+    def update_rpi(self, rpi, removed_inds):
+        # update lpi with removed indices from rpi
+        counts = np.array([sum(1 for num in removed_inds if num < xx) for xx in rpi])
+        rpi = np.array(rpi) - counts
+        return rpi
