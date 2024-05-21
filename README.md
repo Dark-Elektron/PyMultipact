@@ -9,3 +9,6 @@ Maxwell eigenvalue problem (MEVP) for the electromagnetic (EM) fields in axisymm
 The relativistic Lorentz force equation governing the motion of charged particles is then integrated 
 using the calculated fields within the domain to describe the motion of charged particles. 
 Benchmarking against existing multipacting analysis tools is performed to validate the code's accuracy.
+
+# Workflow
+
