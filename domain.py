@@ -86,6 +86,7 @@ class Domain:
         self.domain.edges.Min(ngocc.X).col = (1, 0, 0)
         self.domain.edges.Min(ngocc.Y).name = "rmin"
         self.domain.edges.Min(ngocc.Y).col = (1, 0, 0)
+
         # get xmin, xmax, ymin
         self.zmin = self.domain.vertices.Min(ngocc.X).p[0]
         self.zmax = self.domain.vertices.Max(ngocc.X).p[0]
@@ -200,7 +201,7 @@ class Domain:
             epks_v = epks
 
         if phis is None:
-            phi_v = np.linspace(0, 2 * np.pi, 1)  # <- initial phase
+            phi_v = np.linspace(0, 2 * np.pi, 10)  # <- initial phase
         else:
             phi_v = phis
 

@@ -183,4 +183,4 @@ class Particles:
 
     def trace(self, ax):
         for xx_old, xx in zip(self.x_old, self.x):
-            ax.plot([xx[0], xx_old[0]], [xx[1], xx_old[1]], color='g', marker='o', ms=5, zorder=10000)
+            ax.plot([xx[0], xx_old[0]], [xx[1], xx_old[1]], color='g', marker='o', ms=1, zorder=10000)

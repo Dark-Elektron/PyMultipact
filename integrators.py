@@ -286,7 +286,6 @@ class Integrators:
     #     print('Finish')
 
     def rk4(self, particles, tn, h, em, scale, sey):
-        print(particles.x)
         lpi_all = []
         rpi_all = []
         lpi_rpi_all = []
@@ -299,14 +298,14 @@ class Integrators:
         particles_dummy.save_old()
         particles_dummy.u += ku1 / 2
         particles_dummy.x += kx1 / 2
-        print('Now here', mask)
+
         try:
             ku2, kx2 = np.zeros_like(particles.x), np.zeros_like(particles.x)
 
             ku2[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h / 2, em, scale)  # <- particles dummy = particles.u + kn
             kx2[mask] += h * (particles_dummy.u[mask])
         except Exception as e:
-            print('EXCEPTION1:: ')
+            print('EXCEPTION1:: ', particles_dummy.x)
             lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
             lpi_all.extend(lpi)
             rpi_all.extend(rpi)
@@ -315,6 +314,7 @@ class Integrators:
             if len(lpi_rpi_all) != 0:
                 mask[np.sort(lpi_rpi_all)] = False
 
+            print('EXCEPTION1y:: ', particles_dummy.x)
             particles_dummy = copy.deepcopy(particles)
             particles_dummy.save_old()
 
@@ -328,7 +328,6 @@ class Integrators:
         particles_dummy.u[mask] += ku2[mask] / 2
         particles_dummy.x[mask] += kx2[mask] / 2
 
-        print('Now here', mask)
         try:
             ku3, kx3 = np.zeros_like(particles.x), np.zeros_like(particles.x)
             ku3[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h / 2, em,
@@ -357,7 +356,6 @@ class Integrators:
         particles_dummy.u[mask] += ku3[mask]
         particles_dummy.x[mask] += kx3[mask]
 
-        print('Now here', mask)
         try:
             ku4, kx4 = np.zeros_like(particles.x), np.zeros_like(particles.x)
             ku4[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h, em,
@@ -386,10 +384,8 @@ class Integrators:
         particles_dummy.save_old()
         particles_dummy.u[mask] += 1 / 6 * (ku1[mask] + 2 * ku2[mask] + 2 * ku3[mask] + ku4[mask])
         particles_dummy.x[mask] += 1 / 6 * (kx1[mask] + 2 * kx2[mask] + 2 * kx3[mask] + kx4[mask])
-
-        print('Now here5', mask)
+        print('partdum', particles_dummy.x)
         # check for lost particles
-        print(particles_dummy.x)
         lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
         lpi_all.extend(lpi)
         rpi_all.extend(rpi)
@@ -398,13 +394,10 @@ class Integrators:
         if len(lpi_rpi_all) != 0:
             mask[np.sort(lpi_rpi_all)] = False
 
-        print('Now here7', mask)
         # modify to only update particles not reflected or lost
         particles.u[mask] += 1 / 6 * (ku1[mask] + 2 * ku2[mask] + 2 * ku3[mask] + ku4[mask])
         particles.x[mask] += 1 / 6 * (kx1[mask] + 2 * kx2[mask] + 2 * kx3[mask] + kx4[mask])
 
-        print('Now here', rpi_all, lpi_all, lpi_rpi_all)
-        print(particles.x)
         removed_inds = np.array([])
         if len(rpi_all) != 0:
             removed_inds = particles.update_hit_count(list(set(rpi_all)))
@@ -412,7 +405,6 @@ class Integrators:
         if len(lpi_all) != 0:
             particles.remove(self.update_lpi(lpi_all, removed_inds))
 
-        print('Now here')
         # check if all particles are lost
         if particles.len == 0:
             print('Now here, all particles lost!')
@@ -493,10 +485,7 @@ class Integrators:
                 bool_intc_p, x_intc_p, intc_indx = self.segment_intersection(line11, line22)
                 plt.plot(np.array(line11).T[0], np.array(line11).T[1], c='b', marker='o', zorder=2000)
                 plt.plot(np.array(line22).T[0], np.array(line22).T[1], c='r', marker='o')
-                plt.show()
-                #             print(ind, bool_intc_p)
-                #             sys.exit()
-                print(bool_intc_p)
+
                 if bool_intc_p:
                     dt_frac = np.linalg.norm(x_intc_p - particles_dummy.x_old[ind]) / np.linalg.norm(
                         particles_dummy.x[ind] - particles_dummy.x_old[ind])
@@ -520,21 +509,18 @@ class Integrators:
 
                     e_dot_surf_norm = np.dot(e.real, line22_normal)
                     if e_dot_surf_norm >= 0:
-                        particles_dummy.u_temp[ind] = particles_dummy.u_old[ind] + q0 / m0 * np.sqrt(
-                            1 - (self.norm([particles_dummy.u_old[ind]]) / c0) ** 2) * (
-                                                              e.real + self.cross([particles_dummy.u_old[ind]],
-                                                                                  b.real) - (
-                                                                      1 / c0 ** 2) * (
-                                                                      self.dot([particles_dummy.u_old[ind]],
-                                                                               e.real) *
-                                                                      particles_dummy.u_old[
-                                                                          ind])) * dt * dt_frac
+                        print("before", particles.x)
+                        particles_dummy.u_temp[ind] = (particles_dummy.u_old[ind] +
+                                                       q0 / m0 * np.sqrt(1 - (self.norm([particles_dummy.u_old[ind]]) / c0) ** 2) *
+                                                       (e.real + self.cross([particles_dummy.u_old[ind]], b.real) -
+                                                        (1 / c0 ** 2) * (self.dot([particles_dummy.u_old[ind]], e.real) *
+                                                                         particles_dummy.u_old[ind])) * dt * dt_frac)
 
                         # check if conditions support secondary electron yield
                         # calculate electron energy
                         umag = np.linalg.norm(particles_dummy.u_temp[ind])
                         gamma = 1 / (np.sqrt(1 - (umag / c0) ** 2))
-                        pm = gamma * m0 * umag
+                        # pm = gamma * m0 * umag
                         Eq = (gamma - 1) * m0 * c0 ** 2 * 6.241509e18  # 6.241509e18 Joules to eV factor
 
                         # update main particles array
@@ -547,8 +533,8 @@ class Integrators:
                             particles.n_secondaries[ind].append(0)
 
                         # calculate new position using 1-dt_frac, u_temp at intersection and x_temp
-                        u_emission = line22_normal * np.sqrt(
-                            2 * particles.init_v * q0 / m0)  # <- velocity with which particle is emitted from surface
+                        # u_emission = line22_normal * np.sqrt(2 * particles.init_v * q0 / m0)
+                        u_emission = line22_normal * particles.init_v
 
                         # use impact energy to calculate velocity of secondary particles
                         # to be implemeented
@@ -560,12 +546,12 @@ class Integrators:
                                 self.dot([u_emission], e.real) * u_emission)) * dt * (1 - dt_frac)
 
                         particles.x[ind] = x_intc_p + particles.u[ind] * dt * (1 - dt_frac)
+                        print("after", particles.x)
                         reflected_particles_indx.append(ind)
                     else:
                         lost_particles_indx.append(ind)
 
         # finally check if particle is at the other boundaries not the wall surface
-        print('chck this', lost_particles_indx, reflected_particles_indx)
         for indx_ob, ptx in enumerate(particles.x):
             if ptx[1] < self.rmin:  # <- bottom edge (rotation axis) check
                 lost_particles_indx.append(indx_ob)
@@ -605,7 +591,7 @@ class Integrators:
         # get index of where condition is true. condition should be true at only one point but for the case that
         #  a line has one point on a surface node intersects two edges
         condition = np.where((tt >= 0) * (tt <= 1) * (uu >= 0) * (uu <= 1))[0]
-        print('condition', condition)
+        # print('condition', condition)
 
         if len(condition) > 0:  # review for more complex geometry. a line that has one point on a surface node intersects two points.
             px, py = x1 + tt[condition[0]] * (x2 - x1), y1 + tt[condition[0]] * (y2 - y1)
