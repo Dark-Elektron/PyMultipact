@@ -1,6 +1,7 @@
 import copy
 import itertools
 import pickle
+import time
 
 from matplotlib import cm
 import ngsolve as ng
@@ -25,6 +26,9 @@ c0 = 299792458
 
 class Domain:
     def __init__(self, boundary_file=None, field=None):
+        self.phi_v, self.epks_v = None, None
+        self.particles_left = None
+        self.particles_objects = None
         self.zmin, self.zmax, self.rmin, self.rmax = None, None, None, None
         self.eigen_freq = None
         self.K = None
@@ -228,8 +232,9 @@ class Domain:
         self.particles_left = []
         self.particles_nhits = []
         self.particles_objects = []
-
+        start = time.time()
         for epk in self.epks_v:
+            sub_start = time.time()
             t = 0
             dt = 1e-11
             PLOT = False
@@ -265,8 +270,9 @@ class Domain:
                 self.particles_nhits.append(particles.nhit[0])
 
             self.particles_left.append(len(particles.bright_set))
-            print(f"Epk: {epk * self.Epk * 1e-6} MV/m, particles in bright set: {len(particles.bright_set)}")
+            print(f"Epk: {epk * self.Epk * 1e-6} MV/m, particles in bright set: {len(particles.bright_set)}, time: {time.time()-sub_start}")
 
+        print("Total runtime:: ", time.time() - start)
         # results
         mresult = {'cn/c0': np.array(self.particles_left) / n_init_particles,
                    'particles_objects': self.particles_objects,
@@ -284,6 +290,16 @@ class Domain:
     def set_sey(self, sey_filepath):
         self.sey = SEY(sey_filepath)
 
+    def load_multipacting_result(self):
+        # Opening saved model
+        with open("mresults.pkl", "rb") as file:
+            mresult_loaded = pickle.load(file)
+
+        self.particles_left = mresult_loaded['cn/c0']
+        self.particles_objects = mresult_loaded['particles_objects']
+        self.epks_v = mresult_loaded['epks']
+        self.phi_v = mresult_loaded['phis_v']
+
     def calculate_distance_function(self, particles, lmbda):
         kappa = lmbda / (2 * np.pi)
         # calculate distance function
@@ -292,15 +308,6 @@ class Domain:
             df = np.sqrt(np.linalg.norm(x_n[-1] - x_n[0]) ** 2 + kappa * np.linalg.norm(
                 np.exp(1j * phi_n[-1]) - np.exp(1j * phi_n[0])) ** 2)
             particles.df_n[path_i].append(df)
-
-    def get_sey(self):
-        return self.sey
-
-    def plot_sey(self):
-        fig, ax = plt.subplots()
-        ax.plot(self.sey.data['E'][:-1], self.sey.data['sey'][:-1])
-        ax.axhline(1, 0, color='r')
-        plt.show()
 
     def calculate_Ef(self):
         self.Ef = []
@@ -334,6 +341,15 @@ class Domain:
         ax.axhline(1, c='r')
         ax.yscale('log')
         ax.ylim(bottom=1e-3)
+        plt.show()
+
+    def get_sey(self):
+        return self.sey
+
+    def plot_sey(self):
+        fig, ax = plt.subplots()
+        ax.plot(self.sey.data['E'][:-1], self.sey.data['sey'][:-1])
+        ax.axhline(1, 0, color='r')
         plt.show()
 
 
