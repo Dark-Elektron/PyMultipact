@@ -13,6 +13,7 @@ from scipy.signal import find_peaks
 import scipy
 from ipywidgets import IntSlider, FloatSlider, interact, widgets, Layout
 
+import geometry_writer
 from integrators import Integrators
 from particles import Particles
 
@@ -39,8 +40,6 @@ class Domain:
         self.mesh = None
         self.domain = None
 
-        self.define_boundary('sample_domains/tesla_mid_cell.n')
-
         self.particles = np.array([])
         if field is None:
             self.field = None
@@ -57,18 +56,38 @@ class Domain:
         self.eigenvals, self.eigenvecs = None, None
 
         # define domain
-        self.mesh_domain()
+        self.load_boundary('sample_domains/tesla_mid_cell.n')
 
-    def define_boundary(self, geopath):
+    def load_boundary(self, geopath):
         if geopath is None:
             print("Please enter geometry path.")
             return
         try:
-            cav_geom = pd.read_csv(geopath,
-                                   header=None, skiprows=3, skipfooter=1, sep='\s+', engine='python')[[1, 0]]
+            # read geometry
+            cav_geom = pd.read_csv(geopath, header=None, skiprows=3, skipfooter=1,
+                                   sep='\s+', engine='python')[[1, 0]]
             self.boundary = np.array(list(cav_geom.itertuples(index=False, name=None)))
+            self.mesh_domain()
         except Exception as e:
+            print("Please enter valid geometry path.", e)
 
+    def define_boundary(self, kind='cavity', geopath='.', name='geodata'):
+        # Implement entering dimensions using kwargs
+
+        if geopath is None:
+            print("Please enter geometry path.")
+            return
+        try:
+            if kind == 'cavity':
+                # write geometry
+                geometry_writer.write_ell_cavity(geopath, name=name)
+
+            # read geometry
+            cav_geom = pd.read_csv(f'{geopath}/{name}.n', header=None, skiprows=3, skipfooter=1,
+                                   sep='\s+', engine='python')[[1, 0]]
+            self.boundary = np.array(list(cav_geom.itertuples(index=False, name=None)))
+            self.mesh_domain()
+        except Exception as e:
             print("Please enter valid geometry path.", e)
 
     def set_boundary_conditions(self, zmin='PMC', zmax='PMC', rmin='PEC', rmax='PEC'):
@@ -78,10 +97,7 @@ class Domain:
         wp = ngocc.WorkPlane()
         wp.MoveTo(*self.boundary[0])
         for p in self.boundary[1:]:
-            try:
-                wp.LineTo(*p)
-            except:
-                pass
+            wp.LineTo(*p)
         wp.Close().Reverse()
         self.domain = wp.Face()
 
@@ -102,8 +118,7 @@ class Domain:
         geo = ngocc.OCCGeometry(self.domain, dim=2)
 
         # mesh
-        ngmesh = geo.GenerateMesh()
-        # ngmesh = geo.GenerateMesh(maxh=maxh)
+        ngmesh = geo.GenerateMesh(maxh)
         self.mesh = ng.Mesh(ngmesh)
 
     def compute_fields(self):
@@ -271,7 +286,8 @@ class Domain:
                 self.particles_nhits.append(particles.nhit[0])
 
             self.particles_left.append(len(particles.bright_set))
-            print(f"Epk: {epk * self.Epk * 1e-6} MV/m, particles in bright set: {len(particles.bright_set)}, time: {time.time()-sub_start}")
+            print(
+                f"Epk: {epk * self.Epk * 1e-6} MV/m, particles in bright set: {len(particles.bright_set)}, time: {time.time() - sub_start}")
 
         print("Total runtime:: ", time.time() - start)
         # results
@@ -396,11 +412,13 @@ class Domain:
         print(len(self.particles_objects))
         # Observe changes in the value attribute of epk_i_slider and update w_slider accordingly
         epk_i_slider.observe(update_w_max, names='value')
-        w_slider = IntSlider(min=-1, max=len(self.particles_objects[epk_i_slider.value].bright_set) - 1, description='w:',
+        w_slider = IntSlider(min=-1, max=len(self.particles_objects[epk_i_slider.value].bright_set) - 1,
+                             description='w:',
                              layout=Layout(width='50%'), value=28)
 
         axs[0].set_xlabel('z [mm]')
         axs[0].set_ylabel('r [mm]')
+
         # plot multipac results
         # plot_path(r"D:\Dropbox\multipacting\MPGUI21", loc='left', ax=axs[0], label='MultiPac: 42.5 MV/m')
 
