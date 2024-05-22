@@ -50,7 +50,7 @@ graph TD;
 </html>
 
 ```mermaid
-graph TD
+graph LR
     A[Define Domain]:::defineDomain --> B[Solve MEVP]:::solveMevp
     B --> C[Calculate Trajectory]:::calculateTrajectory
     C --> D[Detect and Resolve Collision]:::detectResolveCollision
