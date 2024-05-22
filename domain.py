@@ -2,8 +2,6 @@ import copy
 import itertools
 import pickle
 import time
-
-from matplotlib import cm
 import ngsolve as ng
 from ngsolve.webgui import Draw
 import netgen.occ as ngocc
@@ -13,6 +11,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 from scipy.signal import find_peaks
 import scipy
+from ipywidgets import IntSlider, FloatSlider, interact, widgets
 
 from integrators import Integrators
 from particles import Particles
@@ -351,6 +350,86 @@ class Domain:
         ax.plot(self.sey.data['E'][:-1], self.sey.data['sey'][:-1])
         ax.axhline(1, 0, color='r')
         plt.show()
+
+    def plot_trajectories(self):
+
+        # create plot
+        # fig, axs = plt.subplot_mosaic([[0, 1, 2]], figsize=(11, 4), layout='constrained')
+        fig, axs = plt.subplot_mosaic([[0]], figsize=(6, 4), layout='constrained')
+        # p1 = particles.paths.reshape(particles.paths_count, *particles.x.shape)
+        # path_i = 0
+        # line, = ax.plot(p1[:, path_i, :][:, 0], p1[:, path_i, :][:, 1])#, lw=0, marker='o', ms=2)
+
+        path_i = 0
+        Epk_indx = 1
+
+        line_surf, = axs[0].plot(np.array(self.boundary)[:, 0] * 1e3, np.array(self.boundary)[:, 1] * 1e3, lw=3)
+        line, = axs[0].plot([], [], c='k', label='PyMultipact')  # , lw=0, marker='o', ms=2)
+        line_init, = axs[0].plot([], [], c='k', marker='o', zorder=10)  # plot initial point
+        line_end, = axs[0].plot([], [], c='b', marker='o', zorder=10)  # plot initial point
+
+        # line2, = axs[1].plot([], [])  #, lw=0, marker='o', ms=2)
+        # line3, = axs[2].plot([], [])  #, lw=0, marker='o', ms=2)
+
+        # Define the function to update the maximum value of slider w based on the value of slider epk_i
+        def update_w_max(epk_i):
+            if isinstance(epk_i, int):
+                w_slider.max = len(self.particles_objects[epk_i].bright_set) - 1
+            else:
+                w_slider.max = len(self.particles_objects[epk_i.new].bright_set) - 1
+
+        # Create slider widgets
+        epk_i_slider = IntSlider(min=0, max=len(self.particles_objects), step=1, description='epk_i:',
+                                 layout=Layout(width='50%'), value=83)
+        print(len(self.particles_objects))
+        # Observe changes in the value attribute of epk_i_slider and update w_slider accordingly
+        epk_i_slider.observe(update_w_max, names='value')
+        w_slider = IntSlider(min=-1, max=len(self.particles_objects[epk_i_slider.value].bright_set) - 1, description='w:',
+                             layout=Layout(width='50%'), value=28)
+
+        axs[0].set_xlabel('z [mm]')
+        axs[0].set_ylabel('r [mm]')
+        # plot multipac results
+        # plot_path(r"D:\Dropbox\multipacting\MPGUI21", loc='left', ax=axs[0], label='MultiPac: 42.5 MV/m')
+
+        def update(epk_i, w):
+
+            particles = self.particles_objects[epk_i]
+            if len(particles.bright_set) != 0:
+                line.set_data(-particles.bright_set[w][:, 0] * 1e3, particles.bright_set[w][:, 1] * 1e3)
+                line.set_label(f'PyMultipact: {self.epks_v[epk_i] * self.Epk * 1e-6} MV/m')
+
+                line_init.set_data(-particles.bright_set[w][:, 0][0] * 1e3,
+                                   particles.bright_set[w][:, 1][0] * 1e3)  # plot initial point
+                #         line_end.set_data(-particles.bright_set[w][:, 0][-1]*1e3, particles.bright_set[w][:, 1][-1]*1e3) # plot end point
+                #         line2.set_data(particles.bright_set[w][:, 2]*1e3, particles.bright_set[w][:, 0]*1e3)
+                #         line2.set_label(w)
+                #         line3.set_data(particles.bright_set[w][:, 2]*1e3, particles.bright_set[w][:, 1]*1e3)
+                #         line3.set_label(w)
+
+                # Set limits for the data
+                x_min, x_max = min(particles.bright_set[w][:, 0] * 1e3), max(particles.bright_set[w][:, 0] * 1e3)
+                y_min, y_max = min(particles.bright_set[w][:, 1] * 1e3), max(particles.bright_set[w][:, 1] * 1e3)
+
+                # Calculate padding dynamically based on the range of data
+                padding_factor = 0.1  # adjust this factor as needed
+                x_padding = (x_max - x_min) * padding_factor
+                y_padding = (y_max - y_min) * padding_factor
+
+                # Add padding around the plot
+                #         axs[0].set_xlim(x_min - x_padding, x_max + x_padding)
+                axs[0].set_xlim(-(x_max + x_padding), -(x_min - x_padding))
+                axs[0].set_ylim(y_min - y_padding, y_max + y_padding)
+
+                axs[0].set_aspect('equal', 'box')
+                for ii in axs:
+                    axs[ii].legend(loc='lower right')
+
+            #     plt.autoscale()
+            fig.canvas.draw_idle()
+            plt.savefig("trajectory_comparison.png", dpi=150)
+
+        interact(update, epk_i=epk_i_slider, w=w_slider);
 
 
 class SEY:
