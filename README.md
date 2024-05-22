@@ -48,3 +48,17 @@ graph TD;
 
 </div>
 </html>
+
+```mermaid
+graph TD
+    A[Define Domain]:::defineDomain --> B[Solve MEVP]:::solveMevp
+    B --> C[Calculate Trajectory]:::calculateTrajectory
+    C --> D[Detect and Resolve Collision]:::detectResolveCollision
+    D --> E[Define Multipacting Metric]:::defineMultipactingMetric
+
+    classDef defineDomain fill:#FFDAB9,stroke:#333,stroke-width:2px;
+    classDef solveMevp fill:#FFE4B5,stroke:#333,stroke-width:2px;
+    classDef calculateTrajectory fill:#FFB6C1,stroke:#333,stroke-width:2px;
+    classDef detectResolveCollision fill:#FFCCCB,stroke:#333,stroke-width:2px;
+    classDef defineMultipactingMetric fill:#FFEFD5,stroke:#333,stroke-width:2px;
+```
