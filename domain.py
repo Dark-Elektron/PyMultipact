@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 from scipy.signal import find_peaks
 import scipy
-from ipywidgets import IntSlider, FloatSlider, interact, widgets
+from ipywidgets import IntSlider, FloatSlider, interact, widgets, Layout
 
 from integrators import Integrators
 from particles import Particles
@@ -25,6 +25,8 @@ c0 = 299792458
 
 class Domain:
     def __init__(self, boundary_file=None, field=None):
+        self.Epk = None
+        self.n_init_particles = None
         self.phi_v, self.epks_v = None, None
         self.particles_left = None
         self.particles_objects = None
@@ -200,12 +202,12 @@ class Domain:
         self.Epk = (max(Esurf))
 
         if epks is None:
-            self.epks_v = 1 / self.Epk * 1e6 * np.linspace(42.5, 80, 1)
+            self.epks_v = 1 / self.Epk * 1e6 * np.linspace(42.5, 80, 2)
         else:
             self.epks_v = epks
 
         if phis is None:
-            phi_v = np.linspace(0, 2 * np.pi, 72)  # <- initial phase
+            phi_v = np.linspace(0, 2 * np.pi, 10)  # <- initial phase
         else:
             phi_v = phis
 
@@ -242,8 +244,8 @@ class Domain:
 
             particles = Particles(init_pos, v_init, xsurf, phi_v, cmap='jet')
 
-            n_init_particles = len(particles.x)
-            print('Initial number of particles: ', n_init_particles)
+            self.n_init_particles = len(particles.x)
+            print('Initial number of particles: ', self.n_init_particles)
             em = EMField(copy.deepcopy(self.gfu_E[mode]), copy.deepcopy(self.gfu_H[mode]))
 
             # move particles with initial velocity. ensure all initial positions after first move lie inside the bounds
@@ -273,8 +275,10 @@ class Domain:
 
         print("Total runtime:: ", time.time() - start)
         # results
-        mresult = {'cn/c0': np.array(self.particles_left) / n_init_particles,
+        mresult = {'cn/c0': np.array(self.particles_left) / self.n_init_particles,
                    'particles_objects': self.particles_objects,
+                   'n_init_particles': self.n_init_particles,
+                   'Epk': self.Epk,
                    'epks': self.epks_v,
                    'phis_v': phi_v}
 
@@ -289,15 +293,23 @@ class Domain:
     def set_sey(self, sey_filepath):
         self.sey = SEY(sey_filepath)
 
-    def load_multipacting_result(self):
-        # Opening saved model
-        with open("mresults.pkl", "rb") as file:
-            mresult_loaded = pickle.load(file)
+    def load_multipacting_result(self, filepath=None):
+        if filepath is None:
+            print("Please enter a filepath.")
 
-        self.particles_left = mresult_loaded['cn/c0']
-        self.particles_objects = mresult_loaded['particles_objects']
-        self.epks_v = mresult_loaded['epks']
-        self.phi_v = mresult_loaded['phis_v']
+        try:
+            # Opening saved model
+            with open("mresults.pkl", "rb") as file:
+                mresult_loaded = pickle.load(file)
+
+            self.particles_left = mresult_loaded['cn/c0']
+            self.particles_objects = mresult_loaded['particles_objects']
+            self.n_init_particles = mresult_loaded['n_init_particles']
+            self.Epk = mresult_loaded['Epk']
+            self.epks_v = mresult_loaded['epks']
+            self.phi_v = mresult_loaded['phis_v']
+        except FileNotFoundError as e:
+            print("Please enter valid file path. ", e)
 
     def calculate_distance_function(self, particles, lmbda):
         kappa = lmbda / (2 * np.pi)
@@ -323,23 +335,23 @@ class Domain:
         fig, ax = plt.subplots()
 
         ax.plot(self.epks_v * self.Epk * 1e-6, np.array(self.particles_left))
-        ax.ylim(bottom=0)
+        ax.set_ylim(bottom=0)
         plt.show()
 
     def plot_Ef(self):
         fig, ax = plt.subplots()
         ax.plot(self.epks_v * self.Epk * 1e-6, self.Ef)
         ax.axhline(50, c='r')
-        ax.ylim(0, 100)
+        ax.set_ylim(0, 100)
         plt.show()
 
-    def ef(self):
+    def plot_ef(self):
         fig, ax = plt.subplots()
         secondaries = [(sum([np.prod(nn) for nn in particles.n_secondaries])) for particles in self.particles_objects]
         ax.plot(self.epks_v * self.Epk * 1e-6, 2 * (np.array(secondaries) + 1) / self.n_init_particles)
         ax.axhline(1, c='r')
-        ax.yscale('log')
-        ax.ylim(bottom=1e-3)
+        ax.set_yscale('log')
+        ax.set_ylim(bottom=1e-3)
         plt.show()
 
     def get_sey(self):
@@ -427,7 +439,7 @@ class Domain:
 
             #     plt.autoscale()
             fig.canvas.draw_idle()
-            plt.savefig("trajectory_comparison.png", dpi=150)
+            # plt.savefig("trajectory_comparison.png", dpi=150)
 
         interact(update, epk_i=epk_i_slider, w=w_slider);
 
