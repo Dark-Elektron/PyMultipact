@@ -24,4 +24,8 @@ graph LR
     classDef calculateTrajectory fill:#FFB6C1,stroke:#333,stroke-width:2px;
     classDef detectResolveCollision fill:#FFCCCB,stroke:#333,stroke-width:2px;
     classDef defineMultipactingMetric fill:#FFEFD5,stroke:#333,stroke-width:2px;
+    
+    %% Bend the arrow
+    D -->| | E
+    C -.->| | D
 ```
