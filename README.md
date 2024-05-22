@@ -24,3 +24,11 @@ graph LR
     classDef detectResolveCollision fill:#FFCCCB,stroke:#333,stroke-width:2px;
     classDef defineMultipactingMetric fill:#FFEFD5,stroke:#333,stroke-width:2px;
 ```
+
+Certainly! Here’s a refined version:
+
+The workflow begins by defining the domain using `geometry_writer.py`. 
+Next, the Maxwell eigenvalue problem (MEVP) is solved with the NGSolve finite element method (FEM) 
+framework via `domain.compute_field`. Collision detection and handling are performed in Python. 
+The multipacting metrics currently defined are the counter and enhanced counter functions. 
+To analyse the domain for multipacting, `domain.analyse_multipacting` is used.
