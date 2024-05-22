@@ -21,7 +21,8 @@ graph TD;
     C-->D;
 ```
 
-<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+
+<div markdown="1" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
   <div style="flex: 1; text-align: center; background-color: #FFDAB9; padding: 10px; border-radius: 5px; margin: 5px;">
     <strong>Define Domain</strong>
   </div>
