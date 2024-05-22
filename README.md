@@ -22,20 +22,28 @@ graph TD;
 ```
 
 
-<div markdown="1" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+  
   <div style="flex: 1; text-align: center; background-color: #FFDAB9; padding: 10px; border-radius: 5px; margin: 5px;">
-    <strong>Define Domain</strong>
+    
+   <strong>Define Domain</strong>
+
   </div>
+
   <div style="flex: 1; text-align: center; background-color: #FFE4B5; padding: 10px; border-radius: 5px; margin: 5px;">
     <strong>Solve MEVP</strong>
   </div>
+
   <div style="flex: 1; text-align: center; background-color: #FFB6C1; padding: 10px; border-radius: 5px; margin: 5px;">
     <strong>Calculate Trajectory</strong>
   </div>
+
   <div style="flex: 1; text-align: center; background-color: #FFCCCB; padding: 10px; border-radius: 5px; margin: 5px;">
     <strong>Detect and Resolve Collision</strong>
   </div>
+
   <div style="flex: 1; text-align: center; background-color: #FFEFD5; padding: 10px; border-radius: 5px; margin: 5px;">
     <strong>Define Multipacting Metric</strong>
   </div>
+
 </div>
