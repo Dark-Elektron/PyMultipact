@@ -1,5 +1,6 @@
 import copy
 import itertools
+import pickle
 
 from matplotlib import cm
 import ngsolve as ng
@@ -32,7 +33,7 @@ class Domain:
         self.boundary = None
         self.mesh = None
         self.domain = None
-        
+
         self.define_boundary('sample_domains/tesla_mid_cell.n')
 
         self.particles = np.array([])
@@ -178,8 +179,8 @@ class Domain:
     def track_particles(self, mode=1, integrator='rk4'):
         pass
 
-    def analyse_multipacting(self, mode=1, init_pos=None, epks=None, phis=None, v_init=2, init_points=None,
-                             integrator='rk4'):
+    def analyse_multipacting(self, mode=1, init_pos=None, epks=None, phis=None,
+                             v_init=2, init_points=None, integrator='rk4'):
         self.fig, self.ax = plt.subplots()
         lmbda = c0 / (self.eigen_freq[mode] * 1e6)
         if self.sey is None:
@@ -190,18 +191,18 @@ class Domain:
         # epks_v = 1 / Epk * 1e6 * np.linspace(30, 60, 1)
         print(self.boundary)
         xpnts_surf = self.boundary[(self.boundary[:, 1] > 0) & (self.boundary[:, 0] > min(self.boundary[:, 0])) & (
-                    self.boundary[:, 0] < max(self.boundary[:, 0]))]
+                self.boundary[:, 0] < max(self.boundary[:, 0]))]
         self.ax.plot(xpnts_surf[:, 0], xpnts_surf[:, 1])
         Esurf = [ng.Norm(self.gfu_E[mode])(self.mesh(xi, yi)) for (xi, yi) in xpnts_surf]
-        Epk = (max(Esurf))
+        self.Epk = (max(Esurf))
 
         if epks is None:
-            epks_v = 1 / Epk * 1e6 * np.linspace(42.5, 80, 1)
+            self.epks_v = 1 / self.Epk * 1e6 * np.linspace(42.5, 80, 1)
         else:
-            epks_v = epks
+            self.epks_v = epks
 
         if phis is None:
-            phi_v = np.linspace(0, 2 * np.pi, 10)  # <- initial phase
+            phi_v = np.linspace(0, 2 * np.pi, 72)  # <- initial phase
         else:
             phi_v = phis
 
@@ -224,11 +225,11 @@ class Domain:
         T = 1 / (self.eigen_freq[mode] * 1e6) * 10
         lmbda = c0 / (self.eigen_freq[mode] * 1e6)
 
-        particles_left = []
-        particles_nhits = []
-        particles_objects = []
+        self.particles_left = []
+        self.particles_nhits = []
+        self.particles_objects = []
 
-        for epk in epks_v:
+        for epk in self.epks_v:
             t = 0
             dt = 1e-11
             PLOT = False
@@ -237,7 +238,8 @@ class Domain:
 
             particles = Particles(init_pos, v_init, xsurf, phi_v, cmap='jet')
 
-            print('Initial number of particles: ', len(particles.x))
+            n_init_particles = len(particles.x)
+            print('Initial number of particles: ', n_init_particles)
             em = EMField(copy.deepcopy(self.gfu_E[mode]), copy.deepcopy(self.gfu_H[mode]))
 
             # move particles with initial velocity. ensure all initial positions after first move lie inside the bounds
@@ -255,18 +257,29 @@ class Domain:
                 t += dt
 
             self.calculate_distance_function(particles, lmbda)
-            particles_objects.append(particles)
+            self.particles_objects.append(particles)
 
             if len(particles.nhit) == 0:
-                particles_nhits.append(0)
+                self.particles_nhits.append(0)
             else:
-                particles_nhits.append(particles.nhit[0])
+                self.particles_nhits.append(particles.nhit[0])
 
-            particles_left.append(len(particles.bright_set))
-            print(f"Epk: {epk * Epk * 1e-6} MV/m, particles in bright set: {len(particles.bright_set)}")
+            self.particles_left.append(len(particles.bright_set))
+            print(f"Epk: {epk * self.Epk * 1e-6} MV/m, particles in bright set: {len(particles.bright_set)}")
 
-        plt.show()
+        # results
+        mresult = {'cn/c0': np.array(self.particles_left) / n_init_particles,
+                   'particles_objects': self.particles_objects,
+                   'epks': self.epks_v,
+                   'phis_v': phi_v}
+
+        # Saving model to pickle file
+        with open("mresults.pkl", "wb") as file:
+            pickle.dump(mresult,
+                        file)  # Dump function is used to write the object into the created file in byte format.
+
         print("Done with multipacting analysis.")
+        plt.show()
 
     def set_sey(self, sey_filepath):
         self.sey = SEY(sey_filepath)
@@ -287,6 +300,40 @@ class Domain:
         fig, ax = plt.subplots()
         ax.plot(self.sey.data['E'][:-1], self.sey.data['sey'][:-1])
         ax.axhline(1, 0, color='r')
+        plt.show()
+
+    def calculate_Ef(self):
+        self.Ef = []
+        for particles in self.particles_objects:
+            #     print(particles.nhit)
+            Ef_p = [particle_energy[-1] for particle_energy in particles.E]
+            #     print(np.sum(Ef_p)/len(Ef_p) if len(Ef_p) > 0 else 0)
+            #     print(len(Ef_p), Ef_p)
+            self.Ef.append(np.sum(Ef_p) / len(Ef_p) if len(Ef_p) > 0 else 0)
+
+        return self.Ef
+
+    def plot_cf(self):
+        fig, ax = plt.subplots()
+
+        ax.plot(self.epks_v * self.Epk * 1e-6, np.array(self.particles_left))
+        ax.ylim(bottom=0)
+        plt.show()
+
+    def plot_Ef(self):
+        fig, ax = plt.subplots()
+        ax.plot(self.epks_v * self.Epk * 1e-6, self.Ef)
+        ax.axhline(50, c='r')
+        ax.ylim(0, 100)
+        plt.show()
+
+    def ef(self):
+        fig, ax = plt.subplots()
+        secondaries = [(sum([np.prod(nn) for nn in particles.n_secondaries])) for particles in self.particles_objects]
+        ax.plot(self.epks_v * self.Epk * 1e-6, 2 * (np.array(secondaries) + 1) / self.n_init_particles)
+        ax.axhline(1, c='r')
+        ax.yscale('log')
+        ax.ylim(bottom=1e-3)
         plt.show()
 
 

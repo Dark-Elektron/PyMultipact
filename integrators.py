@@ -305,7 +305,7 @@ class Integrators:
             ku2[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h / 2, em, scale)  # <- particles dummy = particles.u + kn
             kx2[mask] += h * (particles_dummy.u[mask])
         except Exception as e:
-            print('EXCEPTION1:: ', particles_dummy.x)
+            # print('EXCEPTION1:: ')
             lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
             lpi_all.extend(lpi)
             rpi_all.extend(rpi)
@@ -314,7 +314,6 @@ class Integrators:
             if len(lpi_rpi_all) != 0:
                 mask[np.sort(lpi_rpi_all)] = False
 
-            print('EXCEPTION1y:: ', particles_dummy.x)
             particles_dummy = copy.deepcopy(particles)
             particles_dummy.save_old()
 
@@ -334,7 +333,7 @@ class Integrators:
                                                      scale)  # <- particles dummy = particles.u + kn
             kx3[mask] += h * (particles_dummy.u[mask])
         except:
-            print('EXCEPTION2:: ')
+            # print('EXCEPTION2:: ')
             lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
             lpi_all.extend(lpi)
             rpi_all.extend(rpi)
@@ -362,7 +361,7 @@ class Integrators:
                                                      scale)  # <- particles dummy = particles.u + kn
             kx4[mask] += h * (particles_dummy.u[mask] + ku3[mask])
         except:
-            print('EXCEPTION3:: ', mask, len(particles.x), lpi_rpi_all)
+            # print('EXCEPTION3:: ', mask, len(particles.x), lpi_rpi_all)
             lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
             lpi_all.extend(lpi)
             rpi_all.extend(rpi)
@@ -384,7 +383,6 @@ class Integrators:
         particles_dummy.save_old()
         particles_dummy.u[mask] += 1 / 6 * (ku1[mask] + 2 * ku2[mask] + 2 * ku3[mask] + ku4[mask])
         particles_dummy.x[mask] += 1 / 6 * (kx1[mask] + 2 * kx2[mask] + 2 * kx3[mask] + kx4[mask])
-        print('partdum', particles_dummy.x)
         # check for lost particles
         lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
         lpi_all.extend(lpi)
@@ -407,13 +405,13 @@ class Integrators:
 
         # check if all particles are lost
         if particles.len == 0:
-            print('Now here, all particles lost!')
+            # print('All particles lost!')
             return False
         self.plot_path(particles, tn)
 
-        print("Done rk4", len(particles.x), '\n', particles.x)
-        particles.trace(self.domain.ax)
-        print('=='*50)
+        # print("Done rk4", len(particles.x), '\n', particles.x)
+        # particles.trace(self.domain.ax)
+        # print('=='*50)
 
     def rkf45(self):
         pass
@@ -509,7 +507,6 @@ class Integrators:
 
                     e_dot_surf_norm = np.dot(e.real, line22_normal)
                     if e_dot_surf_norm >= 0:
-                        print("before", particles.x)
                         particles_dummy.u_temp[ind] = (particles_dummy.u_old[ind] +
                                                        q0 / m0 * np.sqrt(1 - (self.norm([particles_dummy.u_old[ind]]) / c0) ** 2) *
                                                        (e.real + self.cross([particles_dummy.u_old[ind]], b.real) -
@@ -541,12 +538,11 @@ class Integrators:
                         #                     print(u_emission, q0 / m0 * np.sqrt(1 - (norm([u_emission]) / c0) ** 2) * (
                         #                                        e.real + cross([u_emission], b.real) - (1 / c0 ** 2) * (
                         #                                        dot([u_emission], e.real) * u_emission)))
-                        particles.u[ind] = u_emission + q0 / m0 * np.sqrt(1 - (self.norm([u_emission]) / c0) ** 2) * (
-                                e.real + self.cross([u_emission], b.real) - (1 / c0 ** 2) * (
-                                self.dot([u_emission], e.real) * u_emission)) * dt * (1 - dt_frac)
+                        particles.u[ind] = (u_emission + q0 / m0 * np.sqrt(1 - (self.norm([u_emission]) / c0) ** 2) *
+                                            (e.real + self.cross([u_emission], b.real) - (1 / c0 ** 2) *
+                                             (self.dot([u_emission], e.real) * u_emission)) * dt * (1 - dt_frac))
 
                         particles.x[ind] = x_intc_p + particles.u[ind] * dt * (1 - dt_frac)
-                        print("after", particles.x)
                         reflected_particles_indx.append(ind)
                     else:
                         lost_particles_indx.append(ind)
