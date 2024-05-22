@@ -13,6 +13,23 @@ Benchmarking against existing multipacting analysis tools is performed to valida
 # Workflow
 
 ```mermaid
+graph TD
+    subgraph horizontal
+        direction LR
+        A[Define Domain]:::defineDomain --> B[Solve MEVP]:::solveMevp --> C[Calculate Trajectory]:::calculateTrajectory
+    end
+    C --> D[Detect and Resolve Collision]:::detectResolveCollision
+    D --> E[Define Multipacting Metric]:::defineMultipactingMetric
+
+    classDef defineDomain fill:#FFDAB9,stroke:#333,stroke-width:2px;
+    classDef solveMevp fill:#FFE4B5,stroke:#333,stroke-width:2px;
+    classDef calculateTrajectory fill:#FFB6C1,stroke:#333,stroke-width:2px;
+    classDef detectResolveCollision fill:#FFCCCB,stroke:#333,stroke-width:2px;
+    classDef defineMultipactingMetric fill:#FFEFD5,stroke:#333,stroke-width:2px;
+```
+
+
+```mermaid
 graph LR
     A[Define Domain]:::defineDomain --> B[Solve MEVP]:::solveMevp --> C[Calculate Trajectory]:::calculateTrajectory
     C --> D[Detect and Resolve Collision]:::detectResolveCollision
@@ -23,4 +40,8 @@ graph LR
     classDef calculateTrajectory fill:#FFB6C1,stroke:#333,stroke-width:2px;
     classDef detectResolveCollision fill:#FFCCCB,stroke:#333,stroke-width:2px;
     classDef defineMultipactingMetric fill:#FFEFD5,stroke:#333,stroke-width:2px;
+
+    %% Adjust the flow direction and positioning
+    C --> | | D
+    D --> | | E
 ```
