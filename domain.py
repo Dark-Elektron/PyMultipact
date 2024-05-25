@@ -483,8 +483,7 @@ class Domain:
 
     def plot_cf(self):
         fig, ax = plt.subplots()
-
-        ax.plot(self.epks_v * self.Epk * 1e-6, np.array(self.particles_left))
+        ax.plot(self.epks_v * self.Epk * 1e-6, np.array(self.particles_left) / self.n_init_particles)
         ax.set_ylim(bottom=0)
         plt.show()
 
