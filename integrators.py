@@ -481,8 +481,8 @@ class Integrators:
                 line22 = surf_pts_neigs[1:], surf_pts_neigs[:-1]
 
                 bool_intc_p, x_intc_p, intc_indx = self.segment_intersection(line11, line22)
-                plt.plot(np.array(line11).T[0], np.array(line11).T[1], c='b', marker='o', zorder=2000)
-                plt.plot(np.array(line22).T[0], np.array(line22).T[1], c='r', marker='o')
+                # plt.plot(np.array(line11).T[0], np.array(line11).T[1], c='b', marker='o', zorder=2000)
+                # plt.plot(np.array(line22).T[0], np.array(line22).T[1], c='r', marker='o')
 
                 if bool_intc_p:
                     dt_frac = np.linalg.norm(x_intc_p - particles_dummy.x_old[ind]) / np.linalg.norm(
@@ -501,9 +501,8 @@ class Integrators:
                     line22 = line22[line22[:, 0].argsort()]
                     line22_normal = -np.array([-(line22[1][1] - line22[0][1]), line22[1][0] - line22[0][0]])
                     line22_normal = line22_normal / np.linalg.norm(line22_normal)
-                    plt.plot(np.array(line11).T[0], np.array(line11).T[1], c='k', marker='o', zorder=2000)
-                    plt.plot(np.array(line22).T[0], np.array(line22).T[1], c='g', marker='o')
-                    # plt.show()
+                    # plt.plot(np.array(line11).T[0], np.array(line11).T[1], c='k', marker='o', zorder=2000)
+                    # plt.plot(np.array(line22).T[0], np.array(line22).T[1], c='g', marker='o')
 
                     e_dot_surf_norm = np.dot(e.real, line22_normal)
                     if e_dot_surf_norm >= 0:

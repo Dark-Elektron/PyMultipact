@@ -12,6 +12,7 @@ from scipy.interpolate import CubicSpline
 from scipy.signal import find_peaks
 import scipy
 from ipywidgets import IntSlider, FloatSlider, interact, widgets, Layout
+import multiprocessing as mp
 
 import geometry_writer
 from integrators import Integrators
@@ -40,7 +41,6 @@ class Domain:
         self.mesh = None
         self.domain = None
 
-        self.particles = np.array([])
         if field is None:
             self.field = None
         else:
@@ -93,7 +93,7 @@ class Domain:
     def set_boundary_conditions(self, zmin='PMC', zmax='PMC', rmin='PEC', rmax='PEC'):
         self.bc_zmin, self.bc_zmax, self.bc_rmin, self.bc_rmax = [zmin, zmax, rmin, rmax]
 
-    def mesh_domain(self, maxh=0.000577):
+    def mesh_domain(self, maxh=0.00577):
         wp = ngocc.WorkPlane()
         wp.MoveTo(*self.boundary[0])
         for p in self.boundary[1:]:
@@ -118,7 +118,7 @@ class Domain:
         geo = ngocc.OCCGeometry(self.domain, dim=2)
 
         # mesh
-        ngmesh = geo.GenerateMesh(maxh)
+        ngmesh = geo.GenerateMesh(maxh=maxh)
         self.mesh = ng.Mesh(ngmesh)
 
     def compute_fields(self):
@@ -199,17 +199,14 @@ class Domain:
     def track_particles(self, mode=1, integrator='rk4'):
         pass
 
-    def analyse_multipacting(self, mode=1, init_pos=None, epks=None, phis=None,
-                             v_init=2, init_points=None, integrator='rk4'):
+    def analyse_multipacting_parallel(self, proc_count, mode=1, init_pos=None, epks=None, phis=None,
+                                      v_init=2, init_points=None, integrator='rk4', parallel=False):
+
         self.fig, self.ax = plt.subplots()
         lmbda = c0 / (self.eigen_freq[mode] * 1e6)
         if self.sey is None:
             print("Secondary emission yield not defined, using default sey.")
 
-        # epks_v = 1/Epk*1e6*np.linspace(1, 60, 119)
-        # phi_v = np.linspace(0, 2*np.pi, 72)  # <- initial phase
-        # epks_v = 1 / Epk * 1e6 * np.linspace(30, 60, 1)
-        print(self.boundary)
         xpnts_surf = self.boundary[(self.boundary[:, 1] > 0) & (self.boundary[:, 0] > min(self.boundary[:, 0])) & (
                 self.boundary[:, 0] < max(self.boundary[:, 0]))]
         self.ax.plot(xpnts_surf[:, 0], xpnts_surf[:, 1])
@@ -222,7 +219,141 @@ class Domain:
             self.epks_v = epks
 
         if phis is None:
-            phi_v = np.linspace(0, 2 * np.pi, 10)  # <- initial phase
+            phi_v = np.linspace(0, 2 * np.pi, 20)  # <- initial phase
+        else:
+            phi_v = phis
+
+        if init_pos is None:
+            init_pos = [-0.00025, -0.0002]
+
+        # get surface points
+        pec_boundary = self.mesh.Boundaries("default")
+        bel = [xx.vertices for xx in pec_boundary.Elements()]
+        bel_unique = list(set(itertools.chain(*bel)))
+        xpnts_surf = sorted([self.mesh.vertices[xy.nr].point for xy in bel_unique])
+        xsurf = np.array(xpnts_surf)
+
+        self.em = EMField(copy.deepcopy(self.gfu_E[mode]), copy.deepcopy(self.gfu_H[mode]))
+
+        # define one internal point
+        xin = [0, 0]
+        integrator = Integrators(self, mode)
+        no_of_remaining_particles = []
+
+        # calculate time for 10 cycles, 20 alternations
+        T = 1 / (self.eigen_freq[mode] * 1e6) * 10
+        lmbda = c0 / (self.eigen_freq[mode] * 1e6)
+
+        self.particles_left = []
+        self.particles_nhits = []
+        self.particles_objects = []
+        start = time.time()
+
+        shape_space_len = len(self.epks_v)
+        share = round(shape_space_len / proc_count)
+
+        for p in range(proc_count):
+            # try:
+            if p < proc_count - 1:
+                proc_epks_list = self.epks_v[p * share:p * share + share]
+            else:
+                proc_epks_list = self.epks_v[p * share:]
+
+            service = mp.Process(target=self._analyse_multipacting, args=(p, mode, init_pos,
+                                                                          proc_epks_list, phi_v,
+                                                                          v_init, init_pos, integrator))
+
+            service.start()
+
+    def _analyse_multipacting(self, proc_id, mode, init_pos, procs_epks, phis,
+                              v_init, init_points, integrator):
+        # get surface points
+        pec_boundary = self.mesh.Boundaries("default")
+        bel = [xx.vertices for xx in pec_boundary.Elements()]
+        bel_unique = list(set(itertools.chain(*bel)))
+        xpnts_surf = sorted([self.mesh.vertices[xy.nr].point for xy in bel_unique])
+        xsurf = np.array(xpnts_surf)
+
+        # calculate time for 10 cycles, 20 alternations
+        T = 1 / (self.eigen_freq[mode] * 1e6) * 10
+        lmbda = c0 / (self.eigen_freq[mode] * 1e6)
+
+        particles_left = []
+        particles_nhits = []
+        particles_objects = []
+        start = time.time()
+        for epk in procs_epks:
+            sub_start = time.time()
+            t = 0
+            dt = 1e-11
+            counter = 0
+
+            particles = Particles(init_pos, v_init, xsurf, phis, cmap='jet')
+            em = []
+            # em = EMField(copy.deepcopy(self.gfu_E[mode]), copy.deepcopy(self.gfu_H[mode]))
+            self.n_init_particles = len(particles.x)
+            print('Initial number of particles: ', self.n_init_particles)
+
+            # move particles with initial velocity. ensure all initial positions after first move lie inside the bounds
+            particles.x = particles.x + particles.u * dt
+
+            record = {}
+            scale = epk  # <- scale Epk to 1 MV/m and multiply by sweep value
+            while t < 1000e-10:
+                if particles.len != 0:
+                    particles.save_old()
+                    integrator.rk4(particles, t, dt, em, scale, self.sey)
+                    particles.update_record()
+                counter += 1
+                t += dt
+
+            self.calculate_distance_function(particles, lmbda)
+            self.particles_objects.append(particles)
+
+            if len(particles.nhit) == 0:
+                particles_nhits.append(0)
+            else:
+                particles_nhits.append(particles.nhit[0])
+
+            particles_left.append(len(particles.bright_set))
+            print(
+                f"Epk: {epk * self.Epk * 1e-6} MV/m, particles in bright set: {len(particles.bright_set)}, time: {time.time() - sub_start}")
+
+        print("Total runtime:: ", time.time() - start)
+        # results
+        mresult = {'cn/c0': np.array(particles_left) / self.n_init_particles,
+                   'particles_objects': particles_objects,
+                   'n_init_particles': self.n_init_particles,
+                   'epks': procs_epks,
+                   'phis_v': phis}
+
+        # Saving model to pickle file
+        with open(f"mresults_{proc_id}", "wb") as file:
+            pickle.dump(mresult, file)
+
+        print("Done with multipacting analysis.")
+        plt.show()
+
+    def analyse_multipacting(self, mode=1, init_pos=None, epks=None, phis=None,
+                             v_init=2, init_points=None, integrator='rk4'):
+        self.fig, self.ax = plt.subplots()
+        lmbda = c0 / (self.eigen_freq[mode] * 1e6)
+        if self.sey is None:
+            print("Secondary emission yield not defined, using default sey.")
+
+        xpnts_surf = self.boundary[(self.boundary[:, 1] > 0) & (self.boundary[:, 0] > min(self.boundary[:, 0])) & (
+                self.boundary[:, 0] < max(self.boundary[:, 0]))]
+        self.ax.plot(xpnts_surf[:, 0], xpnts_surf[:, 1])
+        Esurf = [ng.Norm(self.gfu_E[mode])(self.mesh(xi, yi)) for (xi, yi) in xpnts_surf]
+        self.Epk = (max(Esurf))
+
+        if epks is None:
+            self.epks_v = 1 / self.Epk * 1e6 * np.linspace(0, 80, 10)
+        else:
+            self.epks_v = epks
+
+        if phis is None:
+            phi_v = np.linspace(0, 2 * np.pi, 20)  # <- initial phase
         else:
             phi_v = phis
 
@@ -340,12 +471,15 @@ class Domain:
         self.Ef = []
         for particles in self.particles_objects:
             #     print(particles.nhit)
-            Ef_p = [particle_energy[-1] for particle_energy in particles.E]
+            Ef_p = [particle_energy[-1] if len(particle_energy) != 0 else 0 for particle_energy in particles.E]
             #     print(np.sum(Ef_p)/len(Ef_p) if len(Ef_p) > 0 else 0)
             #     print(len(Ef_p), Ef_p)
             self.Ef.append(np.sum(Ef_p) / len(Ef_p) if len(Ef_p) > 0 else 0)
 
         return self.Ef
+
+    def save_fields(self):
+        pass
 
     def plot_cf(self):
         fig, ax = plt.subplots()
@@ -355,6 +489,8 @@ class Domain:
         plt.show()
 
     def plot_Ef(self):
+        if len(self.Ef) == 0:
+            self.calculate_Ef()
         fig, ax = plt.subplots()
         ax.plot(self.epks_v * self.Epk * 1e-6, self.Ef)
         ax.axhline(50, c='r')
