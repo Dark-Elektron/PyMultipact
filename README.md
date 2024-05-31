@@ -32,13 +32,13 @@ The multipacting metrics currently defined are the counter and enhanced counter 
 To analyse the domain for multipacting, `domain.analyse_multipacting` is used.
 
 
-# Example (Jupyter)
+# Example -TESLA Cavity Geometry (Jupyter)
 
 To get started, import the ``Domain`` class. A ``Domain`` object contains every object that can be found in
 the domain. For example, a ``Particles`` object can be added to the ``Domain`` object. Certain physics
 can also be defined in a ``Domain`` object. For example, the eigenmodes of the domain can be computed
 by calling the ``<domain_object>.compute_field()``. A ``Domain`` object also contains the necessary methods for
-making plots and post-processing.
+making plots and post-processing. 
 
 ```
 from domain import Domain

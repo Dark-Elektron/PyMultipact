@@ -71,7 +71,7 @@ class Domain:
         except Exception as e:
             print("Please enter valid geometry path.", e)
 
-    def define_boundary(self, kind='cavity', geopath='.', name='geodata'):
+    def define_boundary(self, kind='cavity', geopath='.', name='geodata', **kwargs):
         # Implement entering dimensions using kwargs
 
         if geopath is None:
@@ -79,8 +79,17 @@ class Domain:
             return
         try:
             if kind == 'cavity':
+                mid_cell, lend_cell, rend_cell = None, None, None
+                keys = kwargs.keys()
+                if 'mid_cell' in keys:
+                    mid_cell = kwargs['mid_cell']
+                if 'lend_cell' in keys:
+                    lend_cell = kwargs['lend_cell']
+                if 'rend_cell' in keys:
+                    rend_cell = kwargs['rend_cell']
+
                 # write geometry
-                geometry_writer.write_ell_cavity(geopath, name=name)
+                geometry_writer.write_ell_cavity(geopath, mid_cell=None, lend_cell=None, rend_cell=None, name=name)
 
             # read geometry
             cav_geom = pd.read_csv(f'{geopath}/{name}.n', header=None, skiprows=3, skipfooter=1,
@@ -89,6 +98,15 @@ class Domain:
             self.mesh_domain()
         except Exception as e:
             print("Please enter valid geometry path.", e)
+
+    def define_elliptical_cavity(self, mid_cell=None, lend_cell=None, rend_cell=None, beampipe='None'):
+        kwargs = {
+            'mid_cell': mid_cell,
+            'lend_cell': lend_cell,
+            'rend_cell': rend_cell,
+            'beampipe': 'None'
+        }
+        self.define_boundary(kind='cavity', **kwargs)
 
     def set_boundary_conditions(self, zmin='PMC', zmax='PMC', rmin='PEC', rmax='PEC'):
         self.bc_zmin, self.bc_zmax, self.bc_rmin, self.bc_rmax = [zmin, zmax, rmin, rmax]
