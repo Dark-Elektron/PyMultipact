@@ -4,7 +4,7 @@ from icecream import ic
 from scipy.optimize import fsolve
 
 
-def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None, name=None, step=None, n_cell=None):
+def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None, beampipe=None, name=None, step=None, n_cell=None):
     # 21578127116
     # A_m, B_m, a_m, b_m, Ri_m, L_m, Req_m = 73.52 * 1e-3, 131.75 * 1e-3, 106.25 * 1e-3, 118.7 * 1e-3, 150 * 1e-3, 187 * 1e-3, 369.63 * 1e-3
     # A_el, B_el, a_el, b_el, Ri_el, L_el, Req_el = 73.52 * 1e-3, 131.75 * 1e-3, 106.25 * 1e-3, 118.7 * 1e-3, 150 * 1e-3, 187 * 1e-3, 369.63 * 1e-3
@@ -38,8 +38,23 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
         n_cell = 1
     if step is None:
         step = 0.005*min(L_m, L_el, L_er)  # step in boundary points in mm
-    L_bp_l = 0.000
-    L_bp_r = 0.000
+
+    if beampipe is None or beampipe == 'None':
+        L_bp_l = 0.000
+        L_bp_r = 0.000
+    elif beampipe.lower() == 'left':
+        L_bp_l = 4*L_m
+        L_bp_r = 0.000
+    elif beampipe.lower() == 'right':
+        L_bp_l = 0.000
+        L_bp_r = 4*L_m
+    elif beampipe.lower() == 'both':
+        L_bp_l = 4*L_m
+        L_bp_r = 4*L_m
+    else:
+        L_bp_l = 0.000
+        L_bp_r = 0.000
+
 
     # calculate shift
     shift = (L_bp_r + L_bp_l + L_el + (n_cell - 1) * 2 * L_m + L_er) / 2
@@ -331,11 +346,11 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
         pt = [2 * (n_cell-1) * L_m + L_el + L_er + L_bp_l + L_bp_r - shift, 0]
         # lineTo(pt, [2 * n_cell * L_er + L_bp_l - shift, 0], step)
         # pt = [2 * n_cell * L_er + L_bp_l - shift, 0]
-        fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}   0.0000000e+00   0.0000000e+00\n")
+        fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
         # CLOSE PATH
         lineTo(pt, start_point, step)
-        fil.write(f"  {start_point[1]:.7E}  {start_point[0]:.7E}   0.0000000e+00   0.0000000e+00\n")
+        fil.write(f"  {start_point[1]:.7E}  {start_point[0]:.7E}\n")
     plt.gca().set_aspect('equal', 'box')
     plt.show()
 

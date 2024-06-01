@@ -1,5 +1,6 @@
 import copy
 import itertools
+import os.path
 import pickle
 import time
 import ngsolve as ng
@@ -26,7 +27,9 @@ c0 = 299792458
 
 
 class Domain:
-    def __init__(self, boundary_file=None, field=None):
+    def __init__(self, project, boundary_file=None, field=None):
+        self.project_folder = project.folder
+
         self.Epk = None
         self.n_init_particles = None
         self.phi_v, self.epks_v = None, None
@@ -71,15 +74,15 @@ class Domain:
         except Exception as e:
             print("Please enter valid geometry path.", e)
 
-    def define_boundary(self, kind='cavity', geopath='.', name='geodata', **kwargs):
+    def define_boundary(self, kind='cavity', name='geodata', **kwargs):
         # Implement entering dimensions using kwargs
 
-        if geopath is None:
-            print("Please enter geometry path.")
+        if self.project_folder is None:
+            print("Something is wrong. Project folder is not defined.")
             return
         try:
             if kind == 'cavity':
-                mid_cell, lend_cell, rend_cell = None, None, None
+                mid_cell, lend_cell, rend_cell, beampipe = None, None, None, None
                 keys = kwargs.keys()
                 if 'mid_cell' in keys:
                     mid_cell = kwargs['mid_cell']
@@ -87,14 +90,18 @@ class Domain:
                     lend_cell = kwargs['lend_cell']
                 if 'rend_cell' in keys:
                     rend_cell = kwargs['rend_cell']
+                if 'beampipe' in keys:
+                    beampipe = kwargs['beampipe']
 
                 # write geometry
-                geometry_writer.write_ell_cavity(geopath, mid_cell=None, lend_cell=None, rend_cell=None, name=name)
+                geometry_writer.write_ell_cavity(self.project_folder, mid_cell, lend_cell, rend_cell, beampipe, name=name)
 
-            # read geometry
-            cav_geom = pd.read_csv(f'{geopath}/{name}.n', header=None, skiprows=3, skipfooter=1,
-                                   sep='\s+', engine='python')[[1, 0]]
-            self.boundary = np.array(list(cav_geom.itertuples(index=False, name=None)))
+                # read geometry
+                cav_geom = pd.read_csv(f'{self.project_folder}/{name}.n', header=None, skiprows=3,
+                                       skipfooter=1, sep='\s+', engine='python')[[1, 0]]
+
+                self.boundary = np.array(list(cav_geom.itertuples(index=False, name=None)))
+
             self.mesh_domain()
         except Exception as e:
             print("Please enter valid geometry path.", e)
@@ -104,7 +111,7 @@ class Domain:
             'mid_cell': mid_cell,
             'lend_cell': lend_cell,
             'rend_cell': rend_cell,
-            'beampipe': 'None'
+            'beampipe': None
         }
         self.define_boundary(kind='cavity', **kwargs)
 
@@ -376,7 +383,7 @@ class Domain:
             phi_v = phis
 
         if init_pos is None:
-            init_pos = [-0.00025, -0.0002]
+            init_pos = [-0.00025, -0.000]
 
         # get surface points
         pec_boundary = self.mesh.Boundaries("default")
@@ -448,7 +455,7 @@ class Domain:
                    'phis_v': phi_v}
 
         # Saving model to pickle file
-        with open("mresults.pkl", "wb") as file:
+        with open(f"{self.project_folder}/mresults.pkl", "wb") as file:
             pickle.dump(mresult,
                         file)  # Dump function is used to write the object into the created file in byte format.
 
@@ -627,3 +634,19 @@ class EMField:
     def __init__(self, e, h):
         self.e = e
         self.h = h
+
+
+class Project:
+    def __init__(self):
+        self.default_folder = '.'
+        self.folder = '.'
+
+    def create_project(self, folder_path):
+        # check if path exists
+        if not os.path.exists(folder_path):
+            os.mkdir(folder_path)
+
+        self.folder = folder_path
+
+    def load_project(self, folder_path):
+        pass
