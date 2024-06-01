@@ -109,12 +109,12 @@ class Domain:
     def show_initial_points(self, xrange, step=None):
         pts = self.boundary[(self.boundary[:, 0] > xrange[0]) & (self.boundary[:, 0] < xrange[1])]
 
-        if step is not None:
-            pass
+        if step:
+            pts = self._select_values_with_step(pts, step)
 
         fig, ax = plt.subplots()
         ax.plot(self.boundary[:, 0], self.boundary[:, 1])
-        ax.scatter(pts[:, 0], pts[:, 1], fc='None', ec='k', s=100)
+        ax.scatter(pts[:, 0], pts[:, 1], fc='None', ec='k', s=50)
         plt.show()
 
     def define_elliptical_cavity(self, mid_cell=None, lend_cell=None, rend_cell=None, beampipe='None'):
@@ -148,8 +148,8 @@ class Domain:
         # get xmin, xmax, ymin
         self.zmin = self.domain.vertices.Min(ngocc.X).p[0]
         self.zmax = self.domain.vertices.Max(ngocc.X).p[0]
-        self.rmin = self.domain.vertices.Min(ngocc.Y).p[0]
-        self.rmax = self.domain.vertices.Max(ngocc.Y).p[0]
+        self.rmin = self.domain.vertices.Min(ngocc.Y).p[1]
+        self.rmax = self.domain.vertices.Max(ngocc.Y).p[1]
 
         geo = ngocc.OCCGeometry(self.domain, dim=2)
 
@@ -371,7 +371,7 @@ class Domain:
         plt.show()
 
     def analyse_multipacting(self, mode=1, xrange=None, epks=None, phis=None,
-                             v_init=2, init_points=None, integrator='rk4'):
+                             v_init=2, init_points=None, integrator='rk4', step=None):
 
         self.fig, self.ax = plt.subplots()
         lmbda = c0 / (self.eigen_freq[mode] * 1e6)
@@ -387,7 +387,7 @@ class Domain:
         if epks is None:
             self.epks_v = 1 / self.Epk * 1e6 * np.linspace(0, 80, 192)
         else:
-            self.epks_v = 1 / self.Epk * 1e6 * epks
+            self.epks_v = 1 / self.Epk * epks
 
         if phis is None:
             phi_v = np.linspace(0, 2 * np.pi, 72)  # <- initial phase
@@ -425,7 +425,7 @@ class Domain:
             error = False
             counter = 0
 
-            particles = Particles(xrange, v_init, xsurf, phi_v, cmap='jet')
+            particles = Particles(xrange, v_init, xsurf, phi_v, cmap='jet', step=step)
 
             self.n_init_particles = len(particles.x)
             print('Initial number of particles: ', self.n_init_particles)
@@ -632,6 +632,18 @@ class Domain:
             # plt.savefig("trajectory_comparison.png", dpi=150)
 
         interact(update, epk_i=epk_i_slider, w=w_slider);
+
+    @staticmethod
+    def _select_values_with_step(values, step):
+        selected_values = []
+        last_value = values[0][0] - step
+
+        for value in values:
+            if value[0] >= last_value + step:
+                selected_values.append(value)
+                last_value = value[0]
+
+        return np.array(selected_values)
 
 
 class SEY:

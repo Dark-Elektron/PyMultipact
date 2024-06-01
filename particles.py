@@ -18,13 +18,15 @@ c0 = 299792458
 
 
 class Particles:
-    def __init__(self, xrange, init_v, bounds, phi, cmap='jet'):
+    def __init__(self, xrange, init_v, bounds, phi, cmap='jet', step=None):
         self.cmap = cmap
         M = len(phi)
 
         self.bounds = np.array(bounds)
 
         self.x = self.bounds[(self.bounds[:, 0] > xrange[0]) & (self.bounds[:, 0] < xrange[1])]
+        if step:
+            self.x = self._select_values_with_step(self.x, step)
 
         shape = self.x.shape
         self.len = len(self.x)
@@ -37,7 +39,7 @@ class Particles:
             n12 = self.get_point_normal(idx)
             self.pt_normals[nn] = n12
 
-        # repeat into multidomensional array
+        # repeat into multidimensional array
         self.x = np.array(self.x.tolist() * M)
         self.pt_normals = np.array(self.pt_normals.tolist() * M)
 
@@ -184,3 +186,14 @@ class Particles:
     def trace(self, ax):
         for xx_old, xx in zip(self.x_old, self.x):
             ax.plot([xx[0], xx_old[0]], [xx[1], xx_old[1]], color='g', marker='o', ms=1, zorder=10000)
+
+    @staticmethod
+    def _select_values_with_step(values, step):
+        selected_values = []
+        last_value = values[0][0] - step
+        for value in values:
+            if value[0] >= last_value + step:
+                selected_values.append(value)
+                last_value = value[0]
+
+        return np.array(selected_values)

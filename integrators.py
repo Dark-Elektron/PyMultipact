@@ -24,6 +24,7 @@ class Integrators:
         self.w = 2 * np.pi * domain.eigen_freq[mode] * 1e6
 
         self.zmin, self.zmax, self.rmin, self.rmax = domain.zmin, domain.zmax, domain.rmin, domain.rmax
+        print('inte', self.zmin, self.zmax, self.rmin, self.rmax)
 
     def forward_euler(self, particles, tn, h, em, scale, sey):
         ku1 = h * self.lorentz_force(particles, tn, em, scale)
@@ -383,6 +384,8 @@ class Integrators:
         particles_dummy.save_old()
         particles_dummy.u[mask] += 1 / 6 * (ku1[mask] + 2 * ku2[mask] + 2 * ku3[mask] + ku4[mask])
         particles_dummy.x[mask] += 1 / 6 * (kx1[mask] + 2 * kx2[mask] + 2 * kx3[mask] + kx4[mask])
+
+        # print("dummy particle", len(particles_dummy.x), '\n', particles_dummy.x)
         # check for lost particles
         lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
         lpi_all.extend(lpi)
@@ -410,7 +413,7 @@ class Integrators:
         self.plot_path(particles, tn)
 
         # print("Done rk4", len(particles.x), '\n', particles.x)
-        # particles.trace(self.domain.ax)
+        particles.trace(self.domain.ax)
         # print('=='*50)
 
     def rkf45(self):
@@ -457,7 +460,7 @@ class Integrators:
     def hit_bound(self, particles, particles_dummy, mask, t, dt, em, scale, sey):
         xsurf = particles_dummy.bounds
         #     # check if particle close to boundary
-        res, indx = particles_dummy.distance(10)
+        res, indx = particles_dummy.distance(50)
         ind_ = np.where(res <= c0 * dt)
         res, indx = res[ind_[0], ind_[1]], np.array(indx)[ind_[0], :]
         #     print('\t\t\t\t distance time:', time.time()-ss)
@@ -533,10 +536,7 @@ class Integrators:
                         u_emission = line22_normal * particles.init_v
 
                         # use impact energy to calculate velocity of secondary particles
-                        # to be implemeented
-                        #                     print(u_emission, q0 / m0 * np.sqrt(1 - (norm([u_emission]) / c0) ** 2) * (
-                        #                                        e.real + cross([u_emission], b.real) - (1 / c0 ** 2) * (
-                        #                                        dot([u_emission], e.real) * u_emission)))
+                        # to be implemented
                         particles.u[ind] = (u_emission + q0 / m0 * np.sqrt(1 - (self.norm([u_emission]) / c0) ** 2) *
                                             (e.real + self.cross([u_emission], b.real) - (1 / c0 ** 2) *
                                              (self.dot([u_emission], e.real) * u_emission)) * dt * (1 - dt_frac))
@@ -547,10 +547,10 @@ class Integrators:
                         lost_particles_indx.append(ind)
 
         # finally check if particle is at the other boundaries not the wall surface
-        for indx_ob, ptx in enumerate(particles.x):
-            if ptx[1] < self.rmin:  # <- bottom edge (rotation axis) check
+        for indx_ob, ptx in enumerate(particles_dummy.x):
+            if ptx[1] <= self.rmin:  # <- bottom edge (rotation axis) check
                 lost_particles_indx.append(indx_ob)
-            if ptx[0] < self.zmin or ptx[0] > self.zmax:  # <- left and right boundaries
+            if ptx[0] <= self.zmin or ptx[0] >= self.zmax:  # <- left and right boundaries
                 lost_particles_indx.append(indx_ob)
 
         return lost_particles_indx, reflected_particles_indx
