@@ -24,7 +24,6 @@ class Integrators:
         self.w = 2 * np.pi * domain.eigen_freq[mode] * 1e6
 
         self.zmin, self.zmax, self.rmin, self.rmax = domain.zmin, domain.zmax, domain.rmin, domain.rmax
-        print('inte', self.zmin, self.zmax, self.rmin, self.rmax)
 
     def forward_euler(self, particles, tn, h, em, scale, sey):
         ku1 = h * self.lorentz_force(particles, tn, em, scale)
