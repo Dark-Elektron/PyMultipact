@@ -373,12 +373,12 @@ class Domain:
         self.Epk = (max(Esurf))
 
         if epks is None:
-            self.epks_v = 1 / self.Epk * 1e6 * np.linspace(0, 80, 10)
+            self.epks_v = 1 / self.Epk * 1e6 * np.linspace(0, 80, 192)
         else:
             self.epks_v = epks
 
         if phis is None:
-            phi_v = np.linspace(0, 2 * np.pi, 20)  # <- initial phase
+            phi_v = np.linspace(0, 2 * np.pi, 72)  # <- initial phase
         else:
             phi_v = phis
 
