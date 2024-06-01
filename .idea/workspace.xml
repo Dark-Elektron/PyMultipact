@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="49d6b2e1-2ce1-4e0c-9644-525df92af924" name="Changes" comment="Commmit">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/domain.py" beforeDir="false" afterPath="$PROJECT_DIR$/domain.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/geometry_writer.py" beforeDir="false" afterPath="$PROJECT_DIR$/geometry_writer.py" afterDir="false" />
@@ -398,7 +397,23 @@
       <option name="project" value="LOCAL" />
       <updated>1717167825276</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL-00035" summary="Commmit">
+      <option name="closed" value="true" />
+      <created>1717207522835</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1717207522835</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Commmit">
+      <option name="closed" value="true" />
+      <created>1717208575107</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1717208575107</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

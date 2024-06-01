@@ -4,13 +4,33 @@ from icecream import ic
 from scipy.optimize import fsolve
 
 
-def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None, beampipe=None, name=None, step=None, n_cell=None):
-    # 21578127116
-    # A_m, B_m, a_m, b_m, Ri_m, L_m, Req_m = 73.52 * 1e-3, 131.75 * 1e-3, 106.25 * 1e-3, 118.7 * 1e-3, 150 * 1e-3, 187 * 1e-3, 369.63 * 1e-3
-    # A_el, B_el, a_el, b_el, Ri_el, L_el, Req_el = 73.52 * 1e-3, 131.75 * 1e-3, 106.25 * 1e-3, 118.7 * 1e-3, 150 * 1e-3, 187 * 1e-3, 369.63 * 1e-3
-    # A_er, B_er, a_er, b_er, Ri_er, L_er, Req_er = 73.52 * 1e-3, 131.75 * 1e-3, 106.25 * 1e-3, 118.7 * 1e-3, 150 * 1e-3, 187 * 1e-3, 369.63 * 1e-3
+def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None, beampipe=None, name=None,
+                     step=None, n_cell=None, plot=False):
 
-    # TESLA end cell 1
+    """
+    Write cavity geometry to be used for multipacting analysis
+    Parameters
+    ----------
+    folder: str
+        Folder path to write geometry to
+    n_cell: int
+        Number of cavity cells
+    mid_cell: list, ndarray
+        Array of cavity middle cells' geometric parameters
+    lend_cell: list, ndarray
+        Array of cavity left end cell's geometric parameters
+    rend_cell: list, ndarray
+        Array of cavity left end cell's geometric parameters
+    beampipe: str {"left", "right", "both", "none"}
+        Specify if beam pipe is on one or both ends or at no end at all
+    plot: bool
+        If True, the cavity geometry is plotted for viewing
+
+    Returns
+    -------
+
+    """
+
     if mid_cell is None and lend_cell is None and rend_cell is None:
         A_m, B_m, a_m, b_m, Ri_m, L_m, Req_m = np.array([42, 42, 12, 19, 35, 57.6524, 103.353])*1e-3
         A_el, B_el, a_el, b_el, Ri_el, L_el, Req_el = np.array([42, 42, 12, 19, 35, 57.6524, 103.353])*1e-3
@@ -55,7 +75,6 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
         L_bp_l = 0.000
         L_bp_r = 0.000
 
-
     # calculate shift
     shift = (L_bp_r + L_bp_l + L_el + (n_cell - 1) * 2 * L_m + L_er) / 2
 
@@ -91,21 +110,17 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
         name = 'geodata'
 
     with open(fr'{folder}\{name}.n', 'w') as fil:
-        fil.write("   2.0000000e-03   0.0000000e+00\n")
-        fil.write("   1.25000000e-02   0.0000000e+00\n")  # a point inside the structure
-        fil.write("  -3.1415927e+00  -2.7182818e+00\n")  # a point outside the structure
-
         # SHIFT POINT TO START POINT
         start_point = [-shift, 0]
         fil.write(f"  {start_point[1]:.7E}  {start_point[0]:.7E}\n")
 
-        lineTo(start_point, [-shift, Ri_el], step)
+        lineTo(start_point, [-shift, Ri_el], step, plot=plot)
         pt = [-shift, Ri_el]
         fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
         # ADD BEAM PIPE LENGTH
         if L_bp_l != 0:
-            lineTo(pt, [L_bp_l - shift, Ri_el], step)
+            lineTo(pt, [L_bp_l - shift, Ri_el], step, plot=plot)
             pt = [L_bp_l - shift, Ri_el]
             print(pt)
             fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
@@ -113,19 +128,19 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
         for n in range(1, n_cell + 1):
             if n == 1:
                 # DRAW ARC:
-                pts = arcTo(L_bp_l - shift, Ri_el + b_el, a_el, b_el, step, pt, [-shift + x1el, y1el])
+                pts = arcTo(L_bp_l - shift, Ri_el + b_el, a_el, b_el, step, pt, [-shift + x1el, y1el], plot=plot)
                 pt = [-shift + x1el, y1el]
                 for pp in pts:
                     fil.write(f"  {pp[1]:.7E}  {pp[0]:.7E}\n")
                 fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
                 # DRAW LINE CONNECTING ARCS
-                lineTo(pt, [-shift + x2el, y2el], step)
+                lineTo(pt, [-shift + x2el, y2el], step, plot=plot)
                 pt = [-shift + x2el, y2el]
                 fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
                 # DRAW ARC, FIRST EQUATOR ARC TO NEXT POINT
-                pts = arcTo(L_el + L_bp_l - shift, Req_el - B_el, A_el, B_el, step, pt, [L_bp_l + L_el - shift, Req_el])
+                pts = arcTo(L_el + L_bp_l - shift, Req_el - B_el, A_el, B_el, step, pt, [L_bp_l + L_el - shift, Req_el], plot=plot)
                 pt = [L_bp_l + L_el - shift, Req_el]
                 for pp in pts:
                     fil.write(f"  {pp[1]:.7E}  {pp[0]:.7E}\n")
@@ -136,7 +151,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                     # half of bounding box is required,
                     # start is the lower coordinate of the bounding box and end is the upper
                     pts = arcTo(L_el + L_bp_l - shift, Req_er - B_er, A_er, B_er, step, [pt[0], Req_er - B_er],
-                                [L_el + L_er - x2er + 2 * L_bp_l - shift, Req_er])
+                                [L_el + L_er - x2er + 2 * L_bp_l - shift, Req_er], plot=plot)
                     pt = [L_el + L_er - x2er + 2 * L_bp_l - shift, y2er]
                     for pp in pts:
                         if (np.around(pp, 12) != np.around(pt, 12)).all():
@@ -146,7 +161,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                     fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
                     # STRAIGHT LINE TO NEXT POINT
-                    lineTo(pt, [L_el + L_er - x1er + 2 * L_bp_l - shift, y1er], step)
+                    lineTo(pt, [L_el + L_er - x1er + 2 * L_bp_l - shift, y1er], step, plot=plot)
                     pt = [L_el + L_er - x1er + 2 * L_bp_l - shift, y1er]
                     fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
@@ -154,7 +169,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                     # half of bounding box is required,
                     # start is the lower coordinate of the bounding box and end is the upper
                     pts = arcTo(L_el + L_er + L_bp_l - shift, Ri_er + b_er, a_er, b_er, step, [pt[0], Ri_er],
-                                [L_bp_l + L_el + L_er - shift, y1er])
+                                [L_bp_l + L_el + L_er - shift, y1er], plot=plot)
 
                     pt = [L_bp_l + L_el + L_er - shift, Ri_er]
                     for pp in pts:
@@ -177,7 +192,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                     # half of bounding box is required,
                     # start is the lower coordinate of the bounding box and end is the upper
                     pts = arcTo(L_el + L_bp_l - shift, Req_m - B_m, A_m, B_m, step, [pt[0], Req_m - B_m],
-                                [L_el + L_m - x2 + 2 * L_bp_l - shift, Req_m])
+                                [L_el + L_m - x2 + 2 * L_bp_l - shift, Req_m], plot=plot)
                     pt = [L_el + L_m - x2 + 2 * L_bp_l - shift, y2]
                     for pp in pts:
                         if (np.around(pp, 12) != np.around(pt, 12)).all():
@@ -187,7 +202,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                     fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
                     # STRAIGHT LINE TO NEXT POINT
-                    lineTo(pt, [L_el + L_m - x1 + 2 * L_bp_l - shift, y1], step)
+                    lineTo(pt, [L_el + L_m - x1 + 2 * L_bp_l - shift, y1], step, plot=plot)
                     pt = [L_el + L_m - x1 + 2 * L_bp_l - shift, y1]
                     fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
@@ -195,7 +210,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                     # half of bounding box is required,
                     # start is the lower coordinate of the bounding box and end is the upper
                     pts = arcTo(L_el + L_m + L_bp_l - shift, Ri_m + b_m, a_m, b_m, step, [pt[0], Ri_m],
-                                [L_bp_l + L_el + L_m - shift, y1])
+                                [L_bp_l + L_el + L_m - shift, y1], plot=plot)
                     pt = [L_bp_l + L_el + L_m - shift, Ri_m]
                     for pp in pts:
                         if (np.around(pp, 12) != np.around(pt, 12)).all():
@@ -211,7 +226,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
 
             elif n > 1 and n != n_cell:
                 # DRAW ARC:
-                pts = arcTo(L_bp_l - shift, Ri_m + b_m, a_m, b_m, step, pt, [-shift + x1, y1])
+                pts = arcTo(L_bp_l - shift, Ri_m + b_m, a_m, b_m, step, pt, [-shift + x1, y1], plot=plot)
                 pt = [-shift + x1, y1]
                 for pp in pts:
                     if (np.around(pp, 12) != np.around(pt, 12)).all():
@@ -221,12 +236,12 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                 fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
                 # DRAW LINE CONNECTING ARCS
-                lineTo(pt, [-shift + x2, y2], step)
+                lineTo(pt, [-shift + x2, y2], step, plot=plot)
                 pt = [-shift + x2, y2]
                 fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
                 # DRAW ARC, FIRST EQUATOR ARC TO NEXT POINT
-                pts = arcTo(L_m + L_bp_l - shift, Req_m - B_m, A_m, B_m, step, pt, [L_bp_l + L_m - shift, Req_m])
+                pts = arcTo(L_m + L_bp_l - shift, Req_m - B_m, A_m, B_m, step, pt, [L_bp_l + L_m - shift, Req_m], plot=plot)
                 pt = [L_bp_l + L_m - shift, Req_m]
                 for pp in pts:
                     if (np.around(pp, 12) != np.around(pt, 12)).all():
@@ -239,7 +254,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                 # half of bounding box is required,
                 # start is the lower coordinate of the bounding box and end is the upper
                 pts = arcTo(L_m + L_bp_l - shift, Req_m - B_m, A_m, B_m, step, [pt[0], Req_m - B_m],
-                            [L_m + L_m - x2 + 2 * L_bp_l - shift, Req_m])
+                            [L_m + L_m - x2 + 2 * L_bp_l - shift, Req_m], plot=plot)
                 pt = [L_m + L_m - x2 + 2 * L_bp_l - shift, y2]
                 for pp in pts:
                     if (np.around(pp, 12) != np.around(pt, 12)).all():
@@ -249,7 +264,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                 fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
                 # STRAIGHT LINE TO NEXT POINT
-                lineTo(pt, [L_m + L_m - x1 + 2 * L_bp_l - shift, y1], step)
+                lineTo(pt, [L_m + L_m - x1 + 2 * L_bp_l - shift, y1], step, plot=plot)
                 pt = [L_m + L_m - x1 + 2 * L_bp_l - shift, y1]
                 fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
@@ -257,7 +272,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                 # half of bounding box is required,
                 # start is the lower coordinate of the bounding box and end is the upper
                 pts = arcTo(L_m + L_m + L_bp_l - shift, Ri_m + b_m, a_m, b_m, step, [pt[0], Ri_m],
-                            [L_bp_l + L_m + L_m - shift, y1])
+                            [L_bp_l + L_m + L_m - shift, y1], plot=plot)
                 pt = [L_bp_l + L_m + L_m - shift, Ri_m]
                 ic(pt)
                 for pp in pts:
@@ -272,7 +287,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
             else:
                 print("else")
                 # DRAW ARC:
-                pts = arcTo(L_bp_l - shift, Ri_m + b_m, a_m, b_m, step, pt, [-shift + x1, y1])
+                pts = arcTo(L_bp_l - shift, Ri_m + b_m, a_m, b_m, step, pt, [-shift + x1, y1], plot=plot)
                 pt = [-shift + x1, y1]
                 for pp in pts:
                     if (np.around(pp, 12) != np.around(pt, 12)).all():
@@ -282,12 +297,12 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                 fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
                 # DRAW LINE CONNECTING ARCS
-                lineTo(pt, [-shift + x2, y2], step)
+                lineTo(pt, [-shift + x2, y2], step, plot=plot)
                 pt = [-shift + x2, y2]
                 fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
                 # DRAW ARC, FIRST EQUATOR ARC TO NEXT POINT
-                pts = arcTo(L_m + L_bp_l - shift, Req_m - B_m, A_m, B_m, step, pt, [L_bp_l + L_m - shift, Req_m])
+                pts = arcTo(L_m + L_bp_l - shift, Req_m - B_m, A_m, B_m, step, pt, [L_bp_l + L_m - shift, Req_m], plot=plot)
                 pt = [L_bp_l + L_m - shift, Req_m]
                 for pp in pts:
                     if (np.around(pp, 12) != np.around(pt, 12)).all():
@@ -300,7 +315,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                 # half of bounding box is required,
                 # start is the lower coordinate of the bounding box and end is the upper
                 pts = arcTo(L_m + L_bp_l - shift, Req_er - B_er, A_er, B_er, step, [pt[0], Req_er - B_er],
-                            [L_m + L_er - x2er + L_bp_l + L_bp_r - shift, Req_er])
+                            [L_m + L_er - x2er + L_bp_l + L_bp_r - shift, Req_er], plot=plot)
                 pt = [L_m + L_er - x2er + L_bp_l + L_bp_r - shift, y2er]
                 for pp in pts:
                     if (np.around(pp, 12) != np.around(pt, 12)).all():
@@ -310,7 +325,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                 fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
                 # STRAIGHT LINE TO NEXT POINT
-                lineTo(pt, [L_m + L_er - x1er + L_bp_l + L_bp_r - shift, y1er], step)
+                lineTo(pt, [L_m + L_er - x1er + L_bp_l + L_bp_r - shift, y1er], step, plot=plot)
                 pt = [L_m + L_er - x1er + L_bp_l + L_bp_r - shift, y1er]
                 fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
@@ -318,7 +333,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
                 # half of bounding box is required,
                 # start is the lower coordinate of the bounding box and end is the upper
                 pts = arcTo(L_m + L_er + L_bp_l - shift, Ri_er + b_er, a_er, b_er, step, [pt[0], Ri_er],
-                            [L_bp_l + L_m + L_er - shift, y1er])
+                            [L_bp_l + L_m + L_er - shift, y1er], plot=plot)
                 pt = [L_bp_l + L_m + L_er - shift, Ri_er]
                 for pp in pts:
                     if (np.around(pp, 12) != np.around(pt, 12)).all():
@@ -336,23 +351,24 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
         shift = (L_bp_r + L_bp_l + (n_cell - 1) * 2 * L_m + L_el + L_er) / 2
 
         if L_bp_r != 0:  # if there's a problem, check here.
-            lineTo(pt, [L_bp_r + L_bp_l + 2 * (n_cell-1) * L_m + L_el + L_er - shift, Ri_er], step)
+            lineTo(pt, [L_bp_r + L_bp_l + 2 * (n_cell-1) * L_m + L_el + L_er - shift, Ri_er], step, plot=plot)
             pt = [2 * (n_cell-1) * L_m + L_el + L_er + L_bp_l + L_bp_r - shift, Ri_er]
             fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
             print("pt after", pt)
 
         # END PATH
-        lineTo(pt, [2 * (n_cell-1) * L_m + L_el + L_er + L_bp_l + L_bp_r - shift, 0], step)  # to add beam pipe to right
+        lineTo(pt, [2 * (n_cell-1) * L_m + L_el + L_er + L_bp_l + L_bp_r - shift, 0], step, plot=plot)  # to add beam pipe to right
         pt = [2 * (n_cell-1) * L_m + L_el + L_er + L_bp_l + L_bp_r - shift, 0]
         # lineTo(pt, [2 * n_cell * L_er + L_bp_l - shift, 0], step)
         # pt = [2 * n_cell * L_er + L_bp_l - shift, 0]
         fil.write(f"  {pt[1]:.7E}  {pt[0]:.7E}\n")
 
-        # CLOSE PATH
-        lineTo(pt, start_point, step)
-        fil.write(f"  {start_point[1]:.7E}  {start_point[0]:.7E}\n")
-    plt.gca().set_aspect('equal', 'box')
-    plt.show()
+        # # CLOSE PATH
+        # lineTo(pt, start_point, step, plot=plot)
+        # fil.write(f"  {start_point[1]:.7E}  {start_point[0]:.7E}\n")
+    if plot:
+        plt.gca().set_aspect('equal', 'box')
+        plt.show()
 
 
 def write_ell_cavity_flat_top(folder=None, mid_cell=None, lend_cell=None, rend_cell=None, name=None, step=None, n_cell=None):
@@ -828,7 +844,7 @@ def linspace(start, stop, step=1.):
         return ll
 
 
-def lineTo(prevPt, nextPt, step, plot=True):
+def lineTo(prevPt, nextPt, step, plot=False):
     if prevPt[0] == nextPt[0]:
         # vertical line
         # check id nextPt is greater
@@ -872,7 +888,7 @@ def lineTo(prevPt, nextPt, step, plot=True):
     return np.array([px, py]).T
 
 
-def arcTo(x_center, y_center, a, b, step, start, end, plot=True):
+def arcTo(x_center, y_center, a, b, step, start, end, plot=False):
     u = x_center  # <- x-position of the center
     v = y_center  # <- y-position of the center
     a = a  # <- radius on the x-axis
@@ -893,9 +909,6 @@ def arcTo(x_center, y_center, a, b, step, start, end, plot=True):
 
     return inbox
 
-
-if __name__ == '__main__':
-    drawEllCavity(r'D:\Dropbox\PyMultipact\sample_domains', mid_cell=None, lend_cell=None, rend_ell=None, name='TESLA')
 
 
 

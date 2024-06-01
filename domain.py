@@ -97,14 +97,25 @@ class Domain:
                 geometry_writer.write_ell_cavity(self.project_folder, mid_cell, lend_cell, rend_cell, beampipe, name=name)
 
                 # read geometry
-                cav_geom = pd.read_csv(f'{self.project_folder}/{name}.n', header=None, skiprows=3,
-                                       skipfooter=1, sep='\s+', engine='python')[[1, 0]]
+                cav_geom = pd.read_csv(f'{self.project_folder}/{name}.n', header=None,
+                                       sep='\s+', engine='python')[[1, 0]]
 
                 self.boundary = np.array(list(cav_geom.itertuples(index=False, name=None)))
 
             self.mesh_domain()
         except Exception as e:
             print("Please enter valid geometry path.", e)
+
+    def show_initial_points(self, xrange, step=None):
+        pts = self.boundary[(self.boundary[:, 0] > xrange[0]) & (self.boundary[:, 0] < xrange[1])]
+
+        if step is not None:
+            pass
+
+        fig, ax = plt.subplots()
+        ax.plot(self.boundary[:, 0], self.boundary[:, 1])
+        ax.scatter(pts[:, 0], pts[:, 1], fc='None', ec='k', s=100)
+        plt.show()
 
     def define_elliptical_cavity(self, mid_cell=None, lend_cell=None, rend_cell=None, beampipe='None'):
         kwargs = {
@@ -359,8 +370,9 @@ class Domain:
         print("Done with multipacting analysis.")
         plt.show()
 
-    def analyse_multipacting(self, mode=1, init_pos=None, epks=None, phis=None,
+    def analyse_multipacting(self, mode=1, xrange=None, epks=None, phis=None,
                              v_init=2, init_points=None, integrator='rk4'):
+
         self.fig, self.ax = plt.subplots()
         lmbda = c0 / (self.eigen_freq[mode] * 1e6)
         if self.sey is None:
@@ -375,15 +387,15 @@ class Domain:
         if epks is None:
             self.epks_v = 1 / self.Epk * 1e6 * np.linspace(0, 80, 192)
         else:
-            self.epks_v = epks
+            self.epks_v = 1 / self.Epk * 1e6 * epks
 
         if phis is None:
             phi_v = np.linspace(0, 2 * np.pi, 72)  # <- initial phase
         else:
             phi_v = phis
 
-        if init_pos is None:
-            init_pos = [-0.00025, -0.000]
+        if xrange is None:
+            xrange = [-0.00025, -0.000]
 
         # get surface points
         pec_boundary = self.mesh.Boundaries("default")
@@ -413,7 +425,7 @@ class Domain:
             error = False
             counter = 0
 
-            particles = Particles(init_pos, v_init, xsurf, phi_v, cmap='jet')
+            particles = Particles(xrange, v_init, xsurf, phi_v, cmap='jet')
 
             self.n_init_particles = len(particles.x)
             print('Initial number of particles: ', self.n_init_particles)
