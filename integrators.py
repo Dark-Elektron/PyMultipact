@@ -408,12 +408,11 @@ class Integrators:
 
         # check if all particles are lost
         if particles.len == 0:
-            # print('All particles lost!')
             return False
         self.plot_path(particles, tn)
 
         # print("Done rk4", len(particles.x), '\n', particles.x)
-        particles.trace(self.domain.ax)
+        # particles.trace(self.domain.ax)
         # print('=='*50)
 
     def rkf45(self):

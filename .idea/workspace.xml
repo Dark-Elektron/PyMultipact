@@ -6,11 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="49d6b2e1-2ce1-4e0c-9644-525df92af924" name="Changes" comment="Commmit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/domain.py" beforeDir="false" afterPath="$PROJECT_DIR$/domain.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/integrators.py" beforeDir="false" afterPath="$PROJECT_DIR$/integrators.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebook/.ipynb_checkpoints/pymultipact-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebook/.ipynb_checkpoints/pymultipact-checkpoint.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebook/pymultipact.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebook/pymultipact.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/particles.py" beforeDir="false" afterPath="$PROJECT_DIR$/particles.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -423,7 +418,15 @@
       <option name="project" value="LOCAL" />
       <updated>1717236442559</updated>
     </task>
-    <option name="localTasksCounter" value="38" />
+    <task id="LOCAL-00038" summary="Commmit">
+      <option name="closed" value="true" />
+      <created>1717253265099</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1717253265099</updated>
+    </task>
+    <option name="localTasksCounter" value="39" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
