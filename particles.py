@@ -28,6 +28,11 @@ class Particles:
         if step:
             self.x = self._select_values_with_step(self.x, step)
 
+        # check if any particle in range
+        if len(self.x) == 0:
+            print('No surface emission point in selected range.')
+            exit()
+
         shape = self.x.shape
         self.len = len(self.x)
 

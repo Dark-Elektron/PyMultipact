@@ -17,13 +17,11 @@ c0 = 299792458
 
 
 class Integrators:
-    def __init__(self, domain, mode):
-        self.domain = domain
-        self.mesh = domain.mesh
-        print(domain.eigen_freq[mode] * 1e6)
-        self.w = 2 * np.pi * domain.eigen_freq[mode] * 1e6
+    def __init__(self, mesh, w, bounding_rect):
+        self.mesh = mesh
+        self.w = w
 
-        self.zmin, self.zmax, self.rmin, self.rmax = domain.zmin, domain.zmax, domain.rmin, domain.rmax
+        self.zmin, self.zmax, self.rmin, self.rmax = bounding_rect
 
     def forward_euler(self, particles, tn, h, em, scale, sey):
         ku1 = h * self.lorentz_force(particles, tn, em, scale)
