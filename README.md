@@ -33,27 +33,49 @@ To analyse the domain for multipacting, `domain.analyse_multipacting` is used.
 
 
 # Example -TESLA Cavity Geometry (Jupyter)
-The parameterisation of the TESLA cavity geometry is given in the figure below.
 
-![ALT TEXT](./docs/source/images/tesla_mid_cell.png)
-
-To get started, import the ``Domain`` class. A ``Domain`` object contains every object that can be found in
+To get started, import the ``Project`` and ``Domain`` classes from ``domain``. A ``Project`` object is used to define the project folder
+and required to initialise a ``Domain`` object. A ``Domain`` object contains every object that can be found in
 the domain. For example, a ``Particles`` object can be added to the ``Domain`` object. Certain physics
 can also be defined in a ``Domain`` object. For example, the eigenmodes of the domain can be computed
 by calling the ``<domain_object>.compute_field()``. A ``Domain`` object also contains the necessary methods for
 making plots and post-processing. 
 
 ```
-from domain import Domain
+from domain import Project, Domain
+
+# create project
+proj = Project()
+proj.create_project('<project_folder>/TESLA')
+
+# define domain
 domain = Domain()
 ```
 
-When a ``Domain`` object is defined, it is meshed automatically with a default size if no specification
-for the mesh is given. The mesh can be regenerated for a specific mesh resolution using
+The defined domain contains, by default, the TESLA cavity geometry (mid-cell). One possible parameterisation of the 
+mid-cell of an elliptical cavity geometry is given in the figure below.
+
+![ALT TEXT](./docs/source/images/tesla_mid_cell.png)
+
+The default elliptical cavity geometry installed with PyMultipact is the TESLA cavity mid-cell geometry. The following 
+line of code can be used to define a new elliptical geometry boundary,
+
+```
+# format: cell = [A, B, a, b, Ri, L, Req] in meters.
+mid_cell = np.array([62.22, 66.1261, 30.22022, 23.1131, 71.9869, 93.5, 171.1929])*1e-3
+domain.define_elliptical_cavity(mid_cell=mid_cell)
+```
+
+The geometry can be visualised using
+
+```domain.draw()```. 
+
+A ``Domain`` object is meshed automatically with a default size if no specification
+for the mesh is given after definition. The mesh can be regenerated for a specific mesh resolution using
 
 ```domain.mesh_domain(<maxh>)```. 
 
-The mesh can then be viewed using
+The mesh can be viewed using
 
 ```domain.draw_mesh()```
 
