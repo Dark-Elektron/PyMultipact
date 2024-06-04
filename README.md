@@ -93,3 +93,13 @@ Multipacting analysis is then carried out using
 ```
 domain.analyse_multipacting()
 ```
+
+The currently implemented multipacting metrics are the counter and enhanced counter functions. 
+Results from multipacting can be plotted with the following lines of code.
+
+```
+domain.plot_cf()  # to plot counter function
+domain.plot_Ef()  # to plot final impact energy
+domain.plot_ef()  # to plot enhanced counter function
+```
+
