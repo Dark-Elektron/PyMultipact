@@ -52,7 +52,7 @@ proj.create_project('<project_folder>/TESLA')
 domain = Domain(proj)
 ```
 
-The defined domain contains, by default, the TESLA cavity geometry (mid-cell). One possible parameterisation of the 
+The defined domain contains, by default, the TESLA cavity geometry (mid-cell) [[1]](#1). One possible parameterisation of the 
 mid-cell of an elliptical cavity geometry is given in the figure below.
 
 ![ALT TEXT](./docs/source/images/tesla_mid_cell.png)
@@ -103,3 +103,10 @@ domain.plot_Ef()  # to plot final impact energy
 domain.plot_ef()  # to plot enhanced counter function
 ```
 
+The results can be compared with the result obtained in  [[1]](#1).
+
+## References
+<a id="1">[1]</a> 
+Dijkstra, E. W. (1968). 
+Go to statement considered harmful. 
+Communications of the ACM, 11(3), 147-148.
