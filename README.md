@@ -11,7 +11,7 @@ using the calculated fields within the domain to describe the motion of charged 
 Benchmarking against existing multipacting analysis tools is performed to validate the code's accuracy.
 
 # Workflow
-
+![ALT TEXT](./docs/source/images/multipacting_flowchart.png)
 ```mermaid
 graph LR
     A[Define Domain]:::defineDomain --> B[Solve MEVP]:::solveMevp --> C[Calculate Trajectory]:::calculateTrajectory
