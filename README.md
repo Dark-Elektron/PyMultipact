@@ -32,7 +32,7 @@ The multipacting metrics currently defined are the counter and enhanced counter 
 To analyse the domain for multipacting, `domain.analyse_multipacting` is used.
 
 
-# Example -TESLA Cavity Geometry (Jupyter)
+# Example - TESLA Cavity Geometry (Jupyter)
 
 To get started, import the ``Project`` and ``Domain`` classes from ``domain``. A ``Project`` object is used to define the project folder
 and required to initialise a ``Domain`` object. A ``Domain`` object contains every object that can be found in
@@ -71,13 +71,13 @@ The geometry can be visualised using
 ```domain.draw()```. 
 
 A ``Domain`` object is meshed automatically with a default size if no specification
-for the mesh is given after definition. The mesh can be regenerated for a specific mesh resolution using
+for the mesh is given after definition. The mesh can be regenerated for a specific mesh resolution and visualised
+using
 
-```domain.mesh_domain(<maxh>)```. 
-
-The mesh can be viewed using
-
-```domain.draw_mesh()```
+```
+domain.mesh_domain(<maxh>)
+domain.draw_mesh()
+```
 
 Next, compute and visualise the fields using
 
@@ -86,7 +86,7 @@ domain.compute_fields()
 domain.draw_fields(mode=1, which='E')
 ```
 
-where the ``which`` keyword is used to specifty if the electric (E) or magnetic (H) field should be plotted.
+where the ``which`` keyword is used to specify if the electric (E) or magnetic (H) field should be plotted.
 The ``mode`` keyword specifies for which mode the field should be plotted. Mode indexing starts from 1.
 Multipacting analysis is then carried out using
 
