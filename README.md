@@ -49,6 +49,8 @@ The default elliptical cavity geometry installed with PyMultipact is the TESLA c
 line of code can be used to define a new elliptical geometry boundary,
 
 ```python
+
+import numpy as np
 # format: cell = [A, B, a, b, Ri, L, Req] in meters.
 mid_cell = np.array([42, 42, 12, 19, 35, 57.7, 103.3])*1e-3
 domain.define_elliptical_cavity(mid_cell=mid_cell)
@@ -57,8 +59,9 @@ domain.define_elliptical_cavity(mid_cell=mid_cell)
 The geometry can be visualised using
 
 ```python
+
 domain.draw()
-```. 
+```
 
 A ``Domain`` object is meshed automatically with a default size if no specification
 for the mesh is given after definition. The mesh can be regenerated for a specific mesh resolution and visualised
