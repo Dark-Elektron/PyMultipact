@@ -62,7 +62,7 @@ line of code can be used to define a new elliptical geometry boundary,
 
 ```
 # format: cell = [A, B, a, b, Ri, L, Req] in meters.
-mid_cell = np.array([62.22, 66.1261, 30.22022, 23.1131, 71.9869, 93.5, 171.1929])*1e-3
+mid_cell = np.array([42, 42, 12, 19, 35, 57.7, 103.3])*1e-3
 domain.define_elliptical_cavity(mid_cell=mid_cell)
 ```
 
