@@ -12,18 +12,6 @@ Benchmarking against existing multipacting analysis tools is performed to valida
 
 # Workflow
 ![ALT TEXT](./docs/source/images/multipacting_flowchart.png)
-```mermaid
-graph LR
-    A[Define Domain]:::defineDomain --> B[Solve MEVP]:::solveMevp --> C[Calculate Trajectory]:::calculateTrajectory
-    C --> D[Detect and Resolve Collision]:::detectResolveCollision
-    D --> E[Define Multipacting Metric]:::defineMultipactingMetric
-
-    classDef defineDomain fill:#FFDAB9,stroke:#333,stroke-width:2px;
-    classDef solveMevp fill:#FFE4B5,stroke:#333,stroke-width:2px;
-    classDef calculateTrajectory fill:#FFB6C1,stroke:#333,stroke-width:2px;
-    classDef detectResolveCollision fill:#FFCCCB,stroke:#333,stroke-width:2px;
-    classDef defineMultipactingMetric fill:#FFEFD5,stroke:#333,stroke-width:2px;
-```
 
 The workflow begins by defining the domain using `geometry_writer.py`. 
 Next, the Maxwell eigenvalue problem (MEVP) is solved with the NGSolve finite element method (FEM) 
