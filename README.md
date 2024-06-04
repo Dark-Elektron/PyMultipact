@@ -49,7 +49,7 @@ proj = Project()
 proj.create_project('<project_folder>/TESLA')
 
 # define domain
-domain = Domain()
+domain = Domain(proj)
 ```
 
 The defined domain contains, by default, the TESLA cavity geometry (mid-cell). One possible parameterisation of the 
