@@ -103,10 +103,13 @@ domain.plot_Ef()  # to plot final impact energy
 domain.plot_ef()  # to plot enhanced counter function
 ```
 
-The results can be compared with the result obtained in  [[1]](#1).
+The results can be compared with the result obtained in  [[2]](#2).
 
 ## References
 <a id="1">[1]</a> 
-Dijkstra, E. W. (1968). 
-Go to statement considered harmful. 
-Communications of the ACM, 11(3), 147-148.
+Aune, Bernard, et al.
+"Superconducting TESLA cavities." Physical Review special topics-accelerators and beams 3.9 (2000): 092001.
+
+<a id="2">[2]</a> 
+Zhu, Feng, et al. 
+"High field multipacting of 1.3 GHZ Tesla cavity." This Workshop, TuP51. 2003.
