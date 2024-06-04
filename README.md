@@ -29,7 +29,7 @@ can also be defined in a ``Domain`` object. For example, the eigenmodes of the d
 by calling the ``<domain_object>.compute_field()``. A ``Domain`` object also contains the necessary methods for
 making plots and post-processing. 
 
-```
+```python
 from domain import Project, Domain
 
 # create project
@@ -48,7 +48,7 @@ mid-cell of an elliptical cavity geometry is given in the figure below.
 The default elliptical cavity geometry installed with PyMultipact is the TESLA cavity mid-cell geometry. The following 
 line of code can be used to define a new elliptical geometry boundary,
 
-```
+```python
 # format: cell = [A, B, a, b, Ri, L, Req] in meters.
 mid_cell = np.array([42, 42, 12, 19, 35, 57.7, 103.3])*1e-3
 domain.define_elliptical_cavity(mid_cell=mid_cell)
@@ -56,20 +56,22 @@ domain.define_elliptical_cavity(mid_cell=mid_cell)
 
 The geometry can be visualised using
 
-```domain.draw()```. 
+```python
+domain.draw()
+```. 
 
 A ``Domain`` object is meshed automatically with a default size if no specification
 for the mesh is given after definition. The mesh can be regenerated for a specific mesh resolution and visualised
 using
 
-```
+```python
 domain.mesh_domain(<maxh>)
 domain.draw_mesh()
 ```
 
 Next, compute and visualise the fields using
 
-```
+```python
 domain.compute_fields()
 domain.draw_fields(mode=1, which='E')
 ```
@@ -78,14 +80,14 @@ where the ``which`` keyword is used to specify if the electric (E) or magnetic (
 The ``mode`` keyword specifies for which mode the field should be plotted. Mode indexing starts from 1.
 Multipacting analysis is then carried out using
 
-```
+```python
 domain.analyse_multipacting()
 ```
 
 The currently implemented multipacting metrics are the counter and enhanced counter functions. 
 Results from multipacting can be plotted with the following lines of code.
 
-```
+```python
 domain.plot_cf()  # to plot counter function
 domain.plot_Ef()  # to plot final impact energy
 domain.plot_ef()  # to plot enhanced counter function
