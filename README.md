@@ -35,7 +35,7 @@ To analyse the domain for multipacting, `domain.analyse_multipacting` is used.
 # Example -TESLA Cavity Geometry (Jupyter)
 The parameterisation of the TESLA cavity geometry is given in the figure below.
 
-[ALT TEXT](../docs/source/images/tesla_mid_cell.png)
+![ALT TEXT](../docs/source/images/tesla_mid_cell.png)
 
 To get started, import the ``Domain`` class. A ``Domain`` object contains every object that can be found in
 the domain. For example, a ``Particles`` object can be added to the ``Domain`` object. Certain physics
