@@ -11,7 +11,8 @@ using the calculated fields within the domain to describe the motion of charged 
 Benchmarking against existing multipacting analysis tools is performed to validate the code's accuracy.
 
 # Workflow
-![ALT TEXT](./docs/source/images/multipacting_flowchart.png)
+![multipacting_flowchart](./docs/source/images/multipacting_flowchart.png)
+<img src="./docs/source/images/multipacting_flowchart.png" alt="ALT TEXT" width="500">
 
 The workflow begins by defining the domain using `geometry_writer.py`. 
 Next, the Maxwell eigenvalue problem (MEVP) is solved with the NGSolve finite element method (FEM) 
