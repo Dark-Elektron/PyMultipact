@@ -11,9 +11,9 @@ using the calculated fields within the domain to describe the motion of charged 
 Benchmarking against existing multipacting analysis tools is performed to validate the code's accuracy.
 
 # Workflow
-![multipacting_flowchart](./docs/source/images/multipacting_flowchart.png)
+
 <p align="center">
-  <img src="./docs/source/images/multipacting_flowchart.png" alt="ALT TEXT" width="500">
+  <img src="./docs/source/images/multipacting_flowchart.png" alt="ALT TEXT" width="600">
 </p>
 
 The workflow begins by defining the domain using `geometry_writer.py`. 
