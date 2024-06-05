@@ -370,6 +370,21 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
         plt.gca().set_aspect('equal', 'box')
         plt.show()
 
+#
+# def write_parallel_plate_capacitor(folder=None, name=None):
+#     default_folder = "."
+#
+#     if folder is None:
+#         folder = default_folder
+#
+#     if name is None:
+#         name = 'geodata'
+#
+#     with open(fr'{folder}\{name}.n', 'w') as fil:
+#         # SHIFT POINT TO START POINT
+#         start_point = [-shift, 0]
+#         fil.write(f"  {start_point[1]:.7E}  {start_point[0]:.7E}\n")
+
 
 def write_ell_cavity_flat_top(folder=None, mid_cell=None, lend_cell=None, rend_cell=None, name=None, step=None, n_cell=None):
     if mid_cell is None and lend_cell is None and rend_cell is None:
