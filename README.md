@@ -12,9 +12,9 @@ Benchmarking against existing multipacting analysis tools is performed to valida
 
 # Workflow
 ![multipacting_flowchart](./docs/source/images/multipacting_flowchart.png)
-<div style="text-align: center;">
+<p align="center">
   <img src="./docs/source/images/multipacting_flowchart.png" alt="ALT TEXT" width="500">
-</div>
+</p>
 
 The workflow begins by defining the domain using `geometry_writer.py`. 
 Next, the Maxwell eigenvalue problem (MEVP) is solved with the NGSolve finite element method (FEM) 
