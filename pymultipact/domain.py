@@ -557,6 +557,18 @@ class Domain:
         plt.show()
 
     def set_sey(self, sey_filepath):
+        """
+        Set custom secondary emission yield
+
+        Parameters
+        ----------
+        sey_filepath: str, Path
+            Secondary emission yield file path
+
+        Returns
+        -------
+
+        """
         self.sey = SEY(sey_filepath)
 
     def load_multipacting_result(self, filepath=None):
@@ -607,12 +619,21 @@ class Domain:
         plt.show()
 
     def plot_Ef(self):
+        """
+        Plot average final impact energy for peak field values
+
+        Returns
+        -------
+
+        """
         if len(self.Ef) == 0:
             self.calculate_Ef()
         fig, ax = plt.subplots()
         ax.plot(self.epks_v * self.Epk * 1e-6, self.Ef)
         ax.axhline(50, c='r')
         ax.set_ylim(0, 100)
+        ax.set_xlabel('$E_\mathrm{pk}$ [MV/m]')
+        ax.set_xlabel('$E_\mathrm{f}$ [eV]')
         plt.show()
 
     def plot_ef(self):

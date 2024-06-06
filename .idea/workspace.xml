@@ -6,7 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="49d6b2e1-2ce1-4e0c-9644-525df92af924" name="Changes" comment="Commmit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebook/pymultipact.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebook/pymultipact.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/source/conf.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/conf.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/source/index.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/index.rst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/source/modules.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/modules.rst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/source/pymultipact.rst" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/pymultipact/domain.py" beforeDir="false" afterPath="$PROJECT_DIR$/pymultipact/domain.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -49,19 +52,20 @@
     "Python.geometry_writer.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "last_opened_file_path": "D:/Dropbox/PyMultipact/docs/source/images",
+    "last_opened_file_path": "D:/Dropbox/PyMultipact/pymultipact/matlab",
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyIntegratedToolsModulesConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\Dropbox\PyMultipact\pymultipact\matlab" />
       <recent name="D:\Dropbox\PyMultipact\docs\source\images" />
       <recent name="D:\Dropbox\PyMultipact\sample_seys" />
       <recent name="D:\Dropbox\PyMultipact\sample_domains" />
       <recent name="D:\Dropbox\PyMultipact" />
-      <recent name="D:\Dropbox\PyMultipact\notebook" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Dropbox\PyMultipact\pymultipact\matlab" />
       <recent name="D:\Dropbox\PyMultipact" />
       <recent name="D:\Dropbox\PyMultipact\pymultipact" />
     </key>
@@ -133,14 +137,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1714757496722</updated>
-    </task>
-    <task id="LOCAL-00018" summary="Commmit">
-      <option name="closed" value="true" />
-      <created>1716381994717</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1716381994717</updated>
     </task>
     <task id="LOCAL-00019" summary="Commmit">
       <option name="closed" value="true" />
@@ -526,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1717670200042</updated>
     </task>
-    <option name="localTasksCounter" value="67" />
+    <task id="LOCAL-00067" summary="Commmit">
+      <option name="closed" value="true" />
+      <created>1717671385501</created>
+      <option name="number" value="00067" />
+      <option name="presentableId" value="LOCAL-00067" />
+      <option name="project" value="LOCAL" />
+      <updated>1717671385501</updated>
+    </task>
+    <option name="localTasksCounter" value="68" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

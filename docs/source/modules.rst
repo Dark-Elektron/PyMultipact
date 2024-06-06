@@ -1,5 +1,5 @@
 PyMultipact
-===============
+===========
 
 .. toctree::
    :maxdepth: 4

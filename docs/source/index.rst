@@ -23,9 +23,10 @@ Modules
 ========
 .. toctree::
    :maxdepth: 6
-   :caption: Module
+   :caption: Modules
 
    modules
+
 
 Indices and tables
 ==================

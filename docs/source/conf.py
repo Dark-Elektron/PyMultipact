@@ -17,6 +17,8 @@ import sys
 # sys.path.insert(0, os.path.abspath('.'))
 # sys.path.insert(2, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../../'))
+# sys.path.insert(0, os.path.abspath('../../pymultipact'))
+# sys.path.insert(0, os.path.abspath('../../pymultipact/matlab'))
 
 
 # -- Project information -----------------------------------------------------
@@ -26,7 +28,7 @@ copyright = '2024, Sosoho-Abasi Udongwo'
 author = 'Sosoho-Abasi Udongwo'
 
 # The full version, including alpha/beta/rc tags
-release = '05.05.202'
+release = '05.05.2024'
 
 
 # -- General configuration ---------------------------------------------------
@@ -47,12 +49,16 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'matplotlib.sphinxext.mathmpl',
     'sphinx.ext.autosectionlabel',
+    'sphinxcontrib.matlab'
     # 'sphinxcontrib.bibtex'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 bibtex_bibfiles = ['../references/refs.bib']
+# primary_domain = "mat"
+print(os.path.dirname(os.path.abspath(r'D:\Dropbox\PyMultipact\pymultipact\matlab')))
+matlab_src_dir = os.path.dirname(os.path.abspath(r'D:\Dropbox\PyMultipact\pymultipact\matlab'))
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
