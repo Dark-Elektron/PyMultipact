@@ -736,7 +736,7 @@ def f(z, *data):
 
     .. _ellipse tangent:
 
-    .. figure:: ../images/ellipse_tangent.png
+    .. figure:: ./images/ellipse_tangent.png
        :alt: ellipse tangent
        :align: center
        :width: 200px

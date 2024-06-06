@@ -5,14 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="49d6b2e1-2ce1-4e0c-9644-525df92af924" name="Changes" comment="Commmit">
-      <change afterPath="$PROJECT_DIR$/docs/source/images/ellipse_tangent.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/PyMultipact.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PyMultipact.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/source/conf.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/conf.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/index.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/index.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/modules.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/modules.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/domain.py" beforeDir="false" afterPath="$PROJECT_DIR$/domain.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebook/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/source/images/ellipse_tangent.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/images/ellipse_tangent.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pymultipact/geometry_writer.py" beforeDir="false" afterPath="$PROJECT_DIR$/pymultipact/geometry_writer.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,6 +59,9 @@
       <recent name="D:\Dropbox\PyMultipact\sample_domains" />
       <recent name="D:\Dropbox\PyMultipact" />
       <recent name="D:\Dropbox\PyMultipact\notebook" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Dropbox\PyMultipact\pymultipact" />
     </key>
   </component>
   <component name="RunManager" selected="Python.domain">
@@ -132,14 +131,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1714757496722</updated>
-    </task>
-    <task id="LOCAL-00014" summary="Commmit">
-      <option name="closed" value="true" />
-      <created>1716376379039</created>
-      <option name="number" value="00014" />
-      <option name="presentableId" value="LOCAL-00014" />
-      <option name="project" value="LOCAL" />
-      <updated>1716376379039</updated>
     </task>
     <task id="LOCAL-00015" summary="Commmit">
       <option name="closed" value="true" />
@@ -525,7 +516,15 @@
       <option name="project" value="LOCAL" />
       <updated>1717585482245</updated>
     </task>
-    <option name="localTasksCounter" value="63" />
+    <task id="LOCAL-00063" summary="Commmit">
+      <option name="closed" value="true" />
+      <created>1717665780514</created>
+      <option name="number" value="00063" />
+      <option name="presentableId" value="LOCAL-00063" />
+      <option name="project" value="LOCAL" />
+      <updated>1717665780514</updated>
+    </task>
+    <option name="localTasksCounter" value="64" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
