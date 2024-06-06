@@ -26,7 +26,7 @@ copyright = '2024, Sosoho-Abasi Udongwo'
 author = 'Sosoho-Abasi Udongwo'
 
 # The full version, including alpha/beta/rc tags
-release = '05.05.2024'
+release = '05.05.202'
 
 
 # -- General configuration ---------------------------------------------------
@@ -79,3 +79,5 @@ html_logo = "./images/logo.png"
 
 # Enable numref
 numfig = True
+
+numpydoc_show_class_members = False

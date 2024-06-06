@@ -5,14 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="49d6b2e1-2ce1-4e0c-9644-525df92af924" name="Changes" comment="Commmit">
-      <change afterPath="$PROJECT_DIR$/docs/source/_static/style.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/source/_templates/layout.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/images/ellipse_tangent_.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/source/conf.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/conf.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/modules.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/modules.rst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/theory.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/theory.rst" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pymultipact/domain.py" beforeDir="false" afterPath="$PROJECT_DIR$/pymultipact/domain.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pymultipact/geometry_writer.py" beforeDir="false" afterPath="$PROJECT_DIR$/pymultipact/geometry_writer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pymultipact/particles.py" beforeDir="false" afterPath="$PROJECT_DIR$/pymultipact/particles.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -137,14 +135,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1714757496722</updated>
-    </task>
-    <task id="LOCAL-00016" summary="Commmit">
-      <option name="closed" value="true" />
-      <created>1716378359354</created>
-      <option name="number" value="00016" />
-      <option name="presentableId" value="LOCAL-00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1716378359354</updated>
     </task>
     <task id="LOCAL-00017" summary="Commmit">
       <option name="closed" value="true" />
@@ -530,7 +520,15 @@
       <option name="project" value="LOCAL" />
       <updated>1717666778554</updated>
     </task>
-    <option name="localTasksCounter" value="65" />
+    <task id="LOCAL-00065" summary="Commmit">
+      <option name="closed" value="true" />
+      <created>1717669001501</created>
+      <option name="number" value="00065" />
+      <option name="presentableId" value="LOCAL-00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1717669001501</updated>
+    </task>
+    <option name="localTasksCounter" value="66" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

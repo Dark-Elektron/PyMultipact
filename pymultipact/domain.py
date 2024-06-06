@@ -226,7 +226,7 @@ class Domain:
 
     def draw(self):
         """
-        Function to draw the deomain
+        Function to draw the domain
 
         Returns
         -------
@@ -425,6 +425,7 @@ class Domain:
     def analyse_multipacting(self, mode=1, xrange=None, epks=None, phis=None,
                              v_init=2, init_points=None, integrator='rk4', step=None):
         """
+        Analyse multipacting
 
         Parameters
         ----------
@@ -432,12 +433,18 @@ class Domain:
             Eigenmode index
         xrange: list, ndarray
             range of x
-        epks
-        phis
-        v_init
-        init_points
-        integrator
-        step
+        epks: list, ndarray
+            Electric field sweep range
+        phis: list, ndarray
+            Phase advance sweep range
+        v_init: float, int
+            Particle emission velocity
+        init_points: list, ndarray
+            Initial emission points range
+        integrator: Integrators
+            Select numerical integration scheme
+        step: int
+            Initial surface points step
 
         Returns
         -------

@@ -9,6 +9,7 @@ def write_ell_cavity(folder=None, mid_cell=None, lend_cell=None, rend_cell=None,
 
     """
     Write cavity geometry to be used for multipacting analysis
+
     Parameters
     ----------
     folder: str
@@ -736,10 +737,10 @@ def f(z, *data):
 
     .. _ellipse tangent:
 
-    .. figure:: ./images/ellipse_tangent.png
+    .. figure:: ./images/ellipse_tangent_.png
        :alt: ellipse tangent
        :align: center
-       :width: 200px
+       :width: 400px
 
     Parameters
     ----------

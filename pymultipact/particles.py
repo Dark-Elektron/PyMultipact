@@ -182,10 +182,21 @@ class Particles:
 
     @staticmethod
     def get_cmap(n, name='jet'):
-        '''
+        """
         Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
         RGB color; the keyword argument name must be a standard mpl colormap name.
-        '''
+
+        Parameters
+        ----------
+        n: int
+            Number of colors to be returned
+        name: str
+            Name of color map
+
+        Returns
+        -------
+
+        """
         return cm.get_cmap(name, n)
 
     def trace(self, ax):
