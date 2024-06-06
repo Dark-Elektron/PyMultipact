@@ -12,9 +12,9 @@ from scipy.interpolate import CubicSpline
 from ipywidgets import IntSlider, interact, Layout
 import multiprocessing as mp
 import pickle
-import geometry_writer
-from integrators import Integrators
-from particles import Particles
+import pymultipact.geometry_writer as geometry_writer
+from pymultipact.integrators import Integrators
+from pymultipact.particles import Particles
 
 q0 = 1.60217663e-19
 m0 = 9.1093837e-31

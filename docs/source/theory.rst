@@ -12,7 +12,7 @@ particles is then integrated using the fields within the cavity. Benchmarking ag
 tools is performed to validate the code's accuracy and efficiency.
 
 Maxwell Eigenvalue Problem
-=========================
+==========================
 The MEVP introduced in \ref{} can be written in a variational form as follows
 
 .. math::
@@ -24,6 +24,7 @@ The MEVP introduced in \ref{} can be written in a variational form as follows
         {\bf n} \times ({\bf {\mu^{-1}}\, \nabla \times {\bf E}}) = 0 & {\bf E} \in \partial \Omega_\mathrm{2},
         \end{array}
     \end{equation}
+
 where :math:`\mathbf{E}` is the electric field, :math:`\lambda = (\omega/c)^2`, :math:`\partial \Omega :=
 \partial \Omega_\mathrm{1}\cup \partial \Omega_\mathrm{2}` is the boundary of :math:`\Omega`.
 A similar equation could also be written for the :math:`\mathbf{H}` field. The assumption already intrinsic in the
@@ -36,6 +37,7 @@ In variational form, we expand the unknown field as the linear combination of se
         \mathbf{E} = \sum_{i=1}^N e_i \mathbf{u}_i,
         \label{eqn: basis function expansion}
     \end{equation}
+
 where :math:`\mathbf{u}_i` represents the basis functions and :math:`e_i` are the coeeficients which are to be calculated.
 The natural basis functions for the :math:`\textbf{curl}\textbf{curl}` problem is the :math:`H(\operatorname{curl}, \Omega)`
 functional space. Therefore, :math:`\mathbf{u}_i` here represents the edge or Nedelec basis functions.
@@ -63,6 +65,7 @@ conditions (:math:`\int_{\partial \Omega_\mathrm{1}} \textbf{u}_i\cdot (\textbf{
         \left[\int_{\Omega}\operatorname{curl} \textbf{u}_i \cdot \operatorname{curl} \textbf{u}_j \text{d}V \right] e_i = \left[\int_{\Omega} \lambda\textbf{u}_i \cdot \textbf{u}_j \text{d}S\right] e_i
         \label{eqn: weak form2}
     \end{equation}
+
 which can be written in matrix form as
 
 .. math::
@@ -111,7 +114,7 @@ Different methods can be used to solve the initial value problem. Multiple step 
 Integration scheme
 ==================
 Classic Runge-Kutta
-+++++++++++++++
++++++++++++++++++++
 
 Adam-Bashforth
 ++++++++++++++

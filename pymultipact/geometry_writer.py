@@ -745,7 +745,6 @@ def f(z, *data):
     ----------
     z: list, array like
         Contains list of tangent points coordinate's variables ``[x1, y1, x2, y2]``.
-        See :numref:`ellipse tangent`
     data: list, array like
         Contains midpoint coordinates of the two ellipses and the dimensions of the ellipses
         data = ``[coords, dim]``; ``coords`` = ``[h, k, p, q]``, ``dim`` = ``[a, b, A, B]``
@@ -791,7 +790,6 @@ def jac(z, *data):
     ----------
     z: list, array like
         Contains list of tangent points coordinate's variables ``[x1, y1, x2, y2]``.
-        See :numref:`ellipse tangent`
     data: list, array like
         Contains midpoint coordinates of the two ellipses and the dimensions of the ellipses
         data = ``[coords, dim]``; ``coords`` = ``[h, k, p, q]``, ``dim`` = ``[a, b, A, B]``
