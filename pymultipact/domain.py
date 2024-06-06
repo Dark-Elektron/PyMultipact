@@ -61,7 +61,7 @@ class Domain:
 
         self.sey = None
         # set default sey
-        self.set_sey(r'../sample_seys/sey')
+        self.set_sey(r'sample_seys/sey')
 
         self.bc_zmin, self.bc_zmax, self.bc_rmin, self.bc_rmax = [0, 0, 0, 0]
         self.gfu_E = None
