@@ -4,4 +4,4 @@ PyMultipact
 .. toctree::
    :maxdepth: 4
 
-   notebook
+   PyMultipact

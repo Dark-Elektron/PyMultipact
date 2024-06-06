@@ -1,7 +1,6 @@
 import copy
 import itertools
 import os.path
-import pickle
 import time
 import ngsolve as ng
 from ngsolve.webgui import Draw
@@ -10,9 +9,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
-from scipy.signal import find_peaks
-import scipy
-from ipywidgets import IntSlider, FloatSlider, interact, widgets, Layout
+from ipywidgets import IntSlider, interact, Layout
 import multiprocessing as mp
 import pickle
 import geometry_writer
@@ -28,6 +25,17 @@ c0 = 299792458
 
 class Domain:
     def __init__(self, project, boundary_file=None, field=None):
+        """
+
+        Parameters
+        ----------
+        project: str
+            Project directory
+        boundary_file: str
+            Boundary file path
+        field: bytearray
+            Field to be loaded
+        """
         self.cn_c0 = None
         self.bounding_rect = None
         self.project_folder = project.folder
@@ -53,7 +61,7 @@ class Domain:
 
         self.sey = None
         # set default sey
-        self.set_sey(r'sample_seys/sey')
+        self.set_sey(r'../sample_seys/sey')
 
         self.bc_zmin, self.bc_zmax, self.bc_rmin, self.bc_rmax = [0, 0, 0, 0]
         self.gfu_E = None
@@ -416,6 +424,25 @@ class Domain:
 
     def analyse_multipacting(self, mode=1, xrange=None, epks=None, phis=None,
                              v_init=2, init_points=None, integrator='rk4', step=None):
+        """
+
+        Parameters
+        ----------
+        mode: int
+            Eigenmode index
+        xrange: list, ndarray
+            range of x
+        epks
+        phis
+        v_init
+        init_points
+        integrator
+        step
+
+        Returns
+        -------
+
+        """
 
         self.fig, self.ax = plt.subplots()
         lmbda = c0 / (self.eigen_freq[mode] * 1e6)

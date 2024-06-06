@@ -30,10 +30,10 @@ and required to initialise a ``Domain`` object. A ``Domain`` object contains eve
 the domain. For example, a ``Particles`` object can be added to the ``Domain`` object. Certain physics
 can also be defined in a ``Domain`` object. For example, the eigenmodes of the domain can be computed
 by calling the ``<domain_object>.compute_field()``. A ``Domain`` object also contains the necessary methods for
-making plots and post-processing. 
+making plots and post-processing.
 
 ```python
-from domain import Project, Domain
+from pymultipact.domain import Project, Domain
 
 # create project
 proj = Project()

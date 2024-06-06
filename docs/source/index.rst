@@ -16,9 +16,6 @@ Introduction
    :maxdepth: 6
    :caption: Introduction
 
-   introduction
-   quickstart
-   jupyter-notebook
    theory
    implementation
 
@@ -26,7 +23,7 @@ Modules
 ========
 .. toctree::
    :maxdepth: 6
-   :caption: Modules
+   :caption: Module
 
    modules
 
