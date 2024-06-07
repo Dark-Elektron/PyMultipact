@@ -616,6 +616,8 @@ class Domain:
         fig, ax = plt.subplots()
         ax.plot(self.epks_v * self.Epk * 1e-6, self.cn_c0)
         ax.set_ylim(bottom=0)
+        ax.set_xlabel('$E_\mathrm{pk}$ [MV/m]')
+        ax.set_ylabel('$c_\mathrm{20}/c_\mathrm{0}$')
         plt.show()
 
     def plot_Ef(self):
@@ -633,7 +635,7 @@ class Domain:
         ax.axhline(50, c='r')
         ax.set_ylim(0, 100)
         ax.set_xlabel('$E_\mathrm{pk}$ [MV/m]')
-        ax.set_xlabel('$E_\mathrm{f}$ [eV]')
+        ax.set_ylabel('$E_\mathrm{f}$ [eV]')
         plt.show()
 
     def plot_ef(self):
@@ -644,6 +646,8 @@ class Domain:
             ax.axhline(1, c='r')
             ax.set_yscale('log')
             ax.set_ylim(bottom=1e-3)
+            ax.set_xlabel('$E_\mathrm{pk}$ [MV/m]')
+            ax.set_ylabel('$e_\mathrm{20}/c_\mathrm{0}$')
             plt.show()
         else:
             print('No secondaries to plot!')
@@ -655,6 +659,8 @@ class Domain:
         fig, ax = plt.subplots()
         ax.plot(self.sey.data['E'][:-1], self.sey.data['sey'][:-1])
         ax.axhline(1, 0, color='r')
+        ax.set_xlabel('$#delta$')
+        ax.set_ylabel('Impact Energy [eV]')
         plt.show()
 
     def plot_trajectories(self):
