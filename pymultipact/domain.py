@@ -72,6 +72,17 @@ class Domain:
         self.load_boundary('sample_domains/tesla_mid_cell.n')
 
     def load_boundary(self, geopath):
+        """
+
+        Parameters
+        ----------
+        geopath: str
+            Path to geometry file
+
+        Returns
+        -------
+
+        """
         if geopath is None:
             print("Please enter geometry path.")
             return
@@ -85,7 +96,22 @@ class Domain:
             print("Please enter valid geometry path.", e)
 
     def define_boundary(self, kind='cavity', name='geodata', **kwargs):
-        # Implement entering dimensions using kwargs
+        """
+
+        Parameters
+        ----------
+        kind: ['cavity']
+            Type of geometry
+        name: str
+            Name of the geometry
+        kwargs: dict
+            Extra parameters depending on the geometry kind
+
+        Returns
+        -------
+
+        """
+
 
         if self.project_folder is None:
             print("Something is wrong. Project folder is not defined.")
@@ -118,6 +144,19 @@ class Domain:
             print("Please enter valid geometry path.", e)
 
     def show_initial_points(self, xrange, step=None):
+        """
+
+        Parameters
+        ----------
+        xrange: list, ndarray
+            Interval of initial surface points
+        step: int
+            Minimum distance between initial surface points
+
+        Returns
+        -------
+
+        """
         pts = self.boundary[(self.boundary[:, 0] > xrange[0]) & (self.boundary[:, 0] < xrange[1])]
 
         if step:
@@ -129,6 +168,23 @@ class Domain:
         plt.show()
 
     def define_elliptical_cavity(self, mid_cell=None, lend_cell=None, rend_cell=None, beampipe='None'):
+        """
+
+        Parameters
+        ----------
+        mid_cell: list, ndarray
+            Array of cavity middle cells' geometric parameters
+        lend_cell: list, ndarray
+            Array of cavity left end cell's geometric parameters
+        rend_cell: list, ndarray
+            Array of cavity left end cell's geometric parameters
+        beampipe: str {"left", "right", "both", "none"}
+            Specify if beam pipe is on one or both ends or at no end at all
+
+        Returns
+        -------
+
+        """
         kwargs = {
             'mid_cell': mid_cell,
             'lend_cell': lend_cell,
@@ -138,9 +194,37 @@ class Domain:
         self.define_boundary(kind='cavity', **kwargs)
 
     def set_boundary_conditions(self, zmin='PMC', zmax='PMC', rmin='PEC', rmax='PEC'):
+        """
+
+        Parameters
+        ----------
+        zmin: str
+            ['PEC', 'PMC']
+        zmax str
+            ['PEC', 'PMC']
+        rmin str
+            ['PEC', 'PMC']
+        rmax str
+            ['PEC', 'PMC']
+
+        Returns
+        -------
+
+        """
         self.bc_zmin, self.bc_zmax, self.bc_rmin, self.bc_rmax = [zmin, zmax, rmin, rmax]
 
     def mesh_domain(self, maxh=0.00577):
+        """
+
+        Parameters
+        ----------
+        maxh: float
+            Mesh resolution
+
+        Returns
+        -------
+
+        """
         wp = ngocc.WorkPlane()
         wp.MoveTo(*self.boundary[0])
         for p in self.boundary[1:]:
@@ -238,6 +322,19 @@ class Domain:
         Draw(self.mesh)
 
     def draw_fields(self, mode=1, which='E'):
+        """
+
+        Parameters
+        ----------
+        mode: int
+            Mode number
+        which: ['E', 'H']
+            E for electric field or H for magnetic field
+
+        Returns
+        -------
+
+        """
         if which == 'E':
             Draw(ng.Norm(self.gfu_E[mode]), self.mesh, order=2)  # , vectors={"grid_size":300};#
         else:
@@ -254,6 +351,26 @@ class Domain:
 
     def analyse_multipacting_parallel(self, proc_count, mode=1, init_pos=None, epks=None, phis=None,
                                       v_init=2, init_points=None, integrator='rk4', parallel=False):
+        """
+
+        Parameters
+        ----------
+        proc_count: int
+
+        mode: int
+
+        init_pos:
+        epks
+        phis
+        v_init:
+        init_points:
+        integrator
+        parallel
+
+        Returns
+        -------
+
+        """
 
         # save mode fields
         with open(f"{self.project_folder}/gfu_EH.pkl", "wb") as f:
