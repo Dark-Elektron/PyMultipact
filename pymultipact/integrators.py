@@ -1,5 +1,7 @@
 import copy
+import time
 
+import ngsolve as ng
 from ngsolve import *
 from ngsolve.webgui import Draw
 from netgen.occ import *
@@ -20,6 +22,7 @@ class Integrators:
     def __init__(self, mesh, w, bounding_rect):
         self.mesh = mesh
         self.w = w
+        self.fig, self.ax = plt.subplots()
 
         self.zmin, self.zmax, self.rmin, self.rmax = bounding_rect
 
@@ -289,6 +292,7 @@ class Integrators:
         lpi_rpi_all = []
 
         mask = np.ones(len(particles.x), dtype=bool)
+
         # k1
         ku1 = h * self.lorentz_force(particles, mask, tn, em, scale)
         kx1 = h * particles.u
@@ -298,10 +302,13 @@ class Integrators:
         particles_dummy.x += kx1 / 2
 
         try:
+            # start = time.time()
             ku2, kx2 = np.zeros_like(particles.x), np.zeros_like(particles.x)
 
             ku2[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h / 2, em, scale)  # <- particles dummy = particles.u + kn
             kx2[mask] += h * (particles_dummy.u[mask])
+            # print('check time:: ', time.time() - start)
+
         except Exception as e:
             # print('EXCEPTION1:: ')
             lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
@@ -330,7 +337,7 @@ class Integrators:
             ku3[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h / 2, em,
                                                      scale)  # <- particles dummy = particles.u + kn
             kx3[mask] += h * (particles_dummy.u[mask])
-        except:
+        except Exception as e:
             # print('EXCEPTION2:: ')
             lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
             lpi_all.extend(lpi)
@@ -358,8 +365,9 @@ class Integrators:
             ku4[mask] += h * self.lorentz_force(particles_dummy, mask, tn + h, em,
                                                      scale)  # <- particles dummy = particles.u + kn
             kx4[mask] += h * (particles_dummy.u[mask] + ku3[mask])
-        except:
+        except Exception as e:
             # print('EXCEPTION3:: ', mask, len(particles.x), lpi_rpi_all)
+            # print(particles_dummy.x, len(particles_dummy.x))
             lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
             lpi_all.extend(lpi)
             rpi_all.extend(rpi)
@@ -409,7 +417,7 @@ class Integrators:
         self.plot_path(particles, tn)
 
         # print("Done rk4", len(particles.x), '\n', particles.x)
-        # particles.trace(self.domain.ax)
+        # self.trace(particles)
         # print('=='*50)
 
     def rkf45(self):
@@ -456,10 +464,9 @@ class Integrators:
     def hit_bound(self, particles, particles_dummy, mask, t, dt, em, scale, sey):
         xsurf = particles_dummy.bounds
         #     # check if particle close to boundary
-        res, indx = particles_dummy.distance(50)
+        res, indx = particles_dummy.distance(1000)
         ind_ = np.where(res <= c0 * dt)
         res, indx = res[ind_[0], ind_[1]], np.array(indx)[ind_[0], :]
-        #     print('\t\t\t\t distance time:', time.time()-ss)
 
         lost_particles_indx = []
         reflected_particles_indx = []
@@ -480,8 +487,8 @@ class Integrators:
                 line22 = surf_pts_neigs[1:], surf_pts_neigs[:-1]
 
                 bool_intc_p, x_intc_p, intc_indx = self.segment_intersection(line11, line22)
-                # plt.plot(np.array(line11).T[0], np.array(line11).T[1], c='b', marker='o', zorder=2000)
-                # plt.plot(np.array(line22).T[0], np.array(line22).T[1], c='r', marker='o')
+                # self.ax.plot(np.array(line11).T[0], np.array(line11).T[1], c='b', marker='o', zorder=2000)
+                # self.ax.plot(np.array(line22).T[0], np.array(line22).T[1], c='r', marker='o')
 
                 if bool_intc_p:
                     dt_frac = np.linalg.norm(x_intc_p - particles_dummy.x_old[ind]) / np.linalg.norm(
@@ -500,8 +507,8 @@ class Integrators:
                     line22 = line22[line22[:, 0].argsort()]
                     line22_normal = -np.array([-(line22[1][1] - line22[0][1]), line22[1][0] - line22[0][0]])
                     line22_normal = line22_normal / np.linalg.norm(line22_normal)
-                    # plt.plot(np.array(line11).T[0], np.array(line11).T[1], c='k', marker='o', zorder=2000)
-                    # plt.plot(np.array(line22).T[0], np.array(line22).T[1], c='g', marker='o')
+                    # self.ax.plot(np.array(line11).T[0], np.array(line11).T[1], c='k', marker='o', zorder=2000)
+                    # self.ax.plot(np.array(line22).T[0], np.array(line22).T[1], c='g', marker='o', zorder=20000)
 
                     e_dot_surf_norm = np.dot(e.real, line22_normal)
                     if e_dot_surf_norm >= 0:
@@ -630,3 +637,7 @@ class Integrators:
         counts = np.array([sum(1 for num in removed_inds if num < xx) for xx in rpi])
         rpi = np.array(rpi) - counts
         return rpi
+
+    def trace(self, particles):
+        for xx_old, xx in zip(particles.x_old, particles.x):
+            self.ax.plot([xx[0], xx_old[0]], [xx[1], xx_old[1]], color='r', marker='o', ms=1, zorder=10000)

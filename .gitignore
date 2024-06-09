@@ -160,3 +160,5 @@ cython_debug/
 #.idea/
 
 C3795
+TESLA
+pymultipact/test.py

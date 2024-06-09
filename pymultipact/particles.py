@@ -19,10 +19,13 @@ c0 = 299792458
 
 class Particles:
     def __init__(self, xrange, init_v, bounds, phi, cmap='jet', step=None):
+        # self.fig, self.ax = plt.subplots()
+
         self.cmap = cmap
         M = len(phi)
 
         self.bounds = np.array(bounds)
+        # self.show_initial_points(xrange, step)
 
         self.x = self.bounds[(self.bounds[:, 0] > xrange[0]) & (self.bounds[:, 0] < xrange[1])]
         if step:
@@ -102,6 +105,7 @@ class Particles:
         return np.atleast_2d(closest_dist_to_surface).T, indx.T.tolist()
 
     def remove(self, ind, bright='no'):
+        ind = list(set(ind))
         if bright != 'yes':
             # add to shadow set before removal from main set
             self.shadow_set.append(self.paths[[ii * len(self.x) + np.array(ind) for ii in range(self.paths_count)]])
@@ -199,10 +203,6 @@ class Particles:
         """
         return cm.get_cmap(name, n)
 
-    def trace(self, ax):
-        for xx_old, xx in zip(self.x_old, self.x):
-            ax.plot([xx[0], xx_old[0]], [xx[1], xx_old[1]], color='g', marker='o', ms=1, zorder=10000)
-
     @staticmethod
     def _select_values_with_step(values, step):
         selected_values = []
@@ -213,3 +213,26 @@ class Particles:
                 last_value = value[0]
 
         return np.array(selected_values)
+
+    # def show_initial_points(self, xrange, step=None):
+    #     """
+    #
+    #     Parameters
+    #     ----------
+    #     xrange: list, ndarray
+    #         Interval of initial surface points
+    #     step: int
+    #         Minimum distance between initial surface points
+    #
+    #     Returns
+    #     -------
+    #
+    #     """
+    #     pts = self.bounds[(self.bounds[:, 0] > xrange[0]) & (self.bounds[:, 0] < xrange[1])]
+    #
+    #     if step:
+    #         pts = self._select_values_with_step(pts, step)
+    #
+    #     self.ax.plot(self.bounds[:, 0], self.bounds[:, 1])
+    #     self.ax.scatter(pts[:, 0], pts[:, 1], fc='None', ec='k', s=50)
+    #     plt.show()

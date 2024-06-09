@@ -91,10 +91,16 @@ For the entire elements making up the domain, it is written as
 
 which is the generalised eigenvalue problem.
 
+.. note::
+    The eigenmode solver currently supports only perfect magnetic conductor (PMC) boundary conditions on the left
+    and right edges and the axisymmetry axis, with perfect electric conductor (PEC) boundary conditions elsewhere.
+    Efforts are ongoing to provide more flexibility in specifying boundary conditions, including the addition of waveguide
+    and open boundary conditions.
 
 
-Relativistic Lorentz Force Integration
-======================================
+
+Relativistic Lorentz Force
+==========================
 The geometry was also written in such a way that there are lot of surface points from which particles can be emitted.
 To motion of charged particles in electromagnetic fields can be described using the Lorentz equation.
 Since we are dealing with relativsitic :math:`\beta=1` or near relativistic :math:`\beta \approx 1`, we consider the
@@ -103,8 +109,8 @@ relativistic Lorentz force equation~\cite{yla1999multipacting}
 .. math::
     \begin{equation}
         \begin{array}{l}
-            \dfrac{\mathrm{d} \mathbf{v}}{\mathrm{d} t}=-\dfrac{q}{m}\left(1-\left(\dfrac{||\mathbf{v}||}{c}\right)^2\right)^{1 / 2}\left(\mathbf{E}+\mathbf{v} \times \mathbf{B}-\dfrac{1}{c^2}(\mathbf{v} \cdot \mathbf{E}) \mathbf{v}\right) \\
-            \dfrac{\mathrm{d} \mathbf{r}}{\mathrm{d} t}=\mathbf{v}
+            \dfrac{\mathrm{d} \mathbf{u}}{\mathrm{d} t}=-\dfrac{q}{m}\left(1-\left(\dfrac{||\mathbf{u}||}{c}\right)^2\right)^{1 / 2}\left(\mathbf{E}+\mathbf{u} \times \mathbf{B}-\dfrac{1}{c^2}(\mathbf{u} \cdot \mathbf{E}) \mathbf{u}\right) \\
+            \dfrac{\mathrm{d} \mathbf{x}}{\mathrm{d} t}=\mathbf{u}
         \end{array}
     \end{equation}
 
@@ -116,5 +122,58 @@ Integration scheme
 Classic Runge-Kutta
 +++++++++++++++++++
 
-Adam-Bashforth
-++++++++++++++
+The classical Runge-Kutta scheme is implemented as follows:
+Given the system of differential equations:
+
+.. math::
+    \begin{equation}
+        \begin{array}{l}
+            \dfrac{\mathrm{d} \mathbf{u}}{\mathrm{d} t}=-\dfrac{q}{m}\left(1-\left(\dfrac{||\mathbf{u}||}{c}\right)^2\right)^{1 / 2}\left(\mathbf{E}+\mathbf{u} \times \mathbf{B}-\dfrac{1}{c^2}(\mathbf{u} \cdot \mathbf{E}) \mathbf{u}\right) \\
+            \dfrac{\mathrm{d} \mathbf{x}}{\mathrm{d} t}=\mathbf{u}
+        \end{array}
+    \end{equation}
+
+Define the function :math:`\mathbf{f}(\mathbf{u}, \mathbf{x}, t)` as:
+
+.. math::
+    \mathbf{f}(\mathbf{u}, \mathbf{x}, t) = -\frac{q}{m} \left(1 - \left(\frac{\|\mathbf{u}\|}{c}\right)^2\right)^{1/2} \left( \mathbf{E} + \mathbf{u} \times \mathbf{B} - \frac{1}{c^2} (\mathbf{u} \cdot \mathbf{E}) \mathbf{u} \right)
+
+
+we use the following fourth-order Runge-Kutta scheme:
+
+Let the initial values be :math:`\mathbf{u}_0` and :math:`\mathbf{x}_0` at time :math:`t_0`.
+Choose a time step :math:`h`.
+For each time step :math:`h`, compute the following intermediate steps:
+
+.. math::
+    \begin{aligned}
+    \mathbf{k}_1^u &= h \cdot \mathbf{f}(\mathbf{u}_n, \mathbf{x}_n, t_n), \\
+    \mathbf{k}_1^x &= h \cdot \mathbf{u}_n,
+    \end{aligned}
+
+.. math::
+    \begin{aligned}
+        \mathbf{k}_2^u &= h \cdot \mathbf{f}\left(\mathbf{u}_n + \frac{\mathbf{k}_1^u}{2}, \mathbf{x}_n + \frac{\mathbf{k}_1^x}{2}, t_n + \frac{h}{2}\right), \\
+        \mathbf{k}_2^x &= h \cdot \left(\mathbf{u}_n + \frac{\mathbf{k}_1^u}{2}\right),
+    \end{aligned}
+
+.. math::
+    \begin{aligned}
+        \mathbf{k}_3^u &= h \cdot \mathbf{f}\left(\mathbf{u}_n + \frac{\mathbf{k}_2^u}{2}, \mathbf{x}_n + \frac{\mathbf{k}_2^x}{2}, t_n + \frac{h}{2}\right), \\
+        \mathbf{k}_3^x &= h \cdot \left(\mathbf{u}_n + \frac{\mathbf{k}_2^u}{2}\right),
+    \end{aligned}
+
+.. math::
+    \begin{aligned}
+        \mathbf{k}_4^u &= h \cdot \mathbf{f}(\mathbf{u}_n + \mathbf{k}_3^u, \mathbf{x}_n + \mathbf{k}_3^x, t_n + h), \\
+        \mathbf{k}_4^x &= h \cdot (\mathbf{u}_n + \mathbf{k}_3^u).
+    \end{aligned}
+
+Update the values of :math:`\mathbf{u}` and :math:`\mathbf{x}`:
+
+.. math::
+    \begin{aligned}
+        \mathbf{u}_{n+1} &= \mathbf{u}_n + \frac{1}{6} (\mathbf{k}_1^u + 2\mathbf{k}_2^u + 2\mathbf{k}_3^u + \mathbf{k}_4^u), \\
+        \mathbf{x}_{n+1} &= \mathbf{x}_n + \frac{1}{6} (\mathbf{k}_1^x + 2\mathbf{k}_2^x + 2\mathbf{k}_3^x + \mathbf{k}_4^x).
+    \end{aligned}
+
