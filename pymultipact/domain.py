@@ -64,6 +64,7 @@ class Domain:
         self.boundary = None
         self.mesh = None
         self.domain = None
+        self.order = 3
 
         if field is None:
             self.field = None
@@ -290,12 +291,13 @@ class Domain:
         # mesh
         ngmesh = geo.GenerateMesh(maxh=maxh)
         self.mesh = ng.Mesh(ngmesh)
+        self.mesh.Curve(self.order)
 
         # save mesh
         with open(f"{self.project_folder}/mesh.pkl", "wb") as f:
             pickle.dump(self.mesh, f)
 
-    def compute_fields(self, order=3):
+    def compute_fields(self):
         """Solve the eigenmodes.
 
         Parameters
@@ -307,7 +309,7 @@ class Domain:
             surface mesh.
         """
         # define finite element space
-        fes = ng.HCurl(self.mesh, order=order, dirichlet='default')
+        fes = ng.HCurl(self.mesh, order=self.order, dirichlet='default')
         u, v = fes.TnT()
 
         a = ng.BilinearForm(ng.y * ng.curl(u) * ng.curl(v) * ng.dx).Assemble()
