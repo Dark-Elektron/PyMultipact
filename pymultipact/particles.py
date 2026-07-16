@@ -89,6 +89,11 @@ class Particles:
         self.E = [[] for ii in range(len(self.x))]
         self.n_secondaries = [[] for ii in range(len(self.x))]
         self.df_n = [[] for ii in range(len(self.x))]
+        # exact impact point and RF phase (w*t + phi) of every counted hit;
+        # the distance function d_n compares the n-th of these with the
+        # initial (site, phase)
+        self.impact_x = [[] for ii in range(len(self.x))]
+        self.impact_phi = [[] for ii in range(len(self.x))]
 
         self.record = [self.x]
         self.lost_particles = []
@@ -101,6 +106,8 @@ class Particles:
         # from these, matching the paper's semantics (zero outside the band).
         self.bright_E = []
         self.bright_n_secondaries = []
+        self.bright_impact_x = []
+        self.bright_impact_phi = []
         # initial position and phase of each bright particle (aligned with
         # bright_set) -- identity is otherwise lost at removal; needed for the
         # distance-function (d20) map and per-site statistics
@@ -171,6 +178,8 @@ class Particles:
                 # removing element by index using pop() function
                 self.E.pop(indx)
                 self.n_secondaries.pop(indx)
+                self.impact_x.pop(indx)
+                self.impact_phi.pop(indx)
 
     def colors(self):
         return self.colors
@@ -213,6 +222,8 @@ class Particles:
                 # arrays
                 self.bright_E.append(self.E[ind])
                 self.bright_n_secondaries.append(self.n_secondaries[ind])
+                self.bright_impact_x.append(self.impact_x[ind])
+                self.bright_impact_phi.append(self.impact_phi[ind])
                 self.bright_init_x.append(self.x_init[ind].copy())
                 self.bright_init_phi.append(float(self.phi_init[ind, 0]))
                 # remove the index from main set

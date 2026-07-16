@@ -698,16 +698,31 @@ class Domain:
             print("Please enter valid file path. ", e)
 
     def calculate_distance_function(self, particles, lmbda):
+        """Distance function d_20 of each bright (20-hit) trajectory,
+        Yla-Oijala Eq. (3.2.3): the distance in (position, phase) space between
+        the initial point (emission site, launch phase) and the 20th impact
+        point. Minima locate the fixed points of resonant multipacting orbits.
+        Stored in particles.df20, aligned with bright_set."""
         kappa = lmbda / (2 * np.pi)
-        # distance function of each bright (20-hit) trajectory: distance in
-        # (position, phase) space between the final and initial state, stored
-        # aligned with bright_set. (The old code appended these into df_n
-        # indexed by bright number, which pointed at unrelated particles.)
         particles.df20 = []
+        use_exact = (hasattr(particles, 'bright_impact_x')
+                     and len(getattr(particles, 'bright_impact_x', []))
+                     == len(particles.bright_set))
         for path_i in range(len(particles.bright_set)):
-            x_n, phi_n = particles.bright_set[path_i][:, 0:2], particles.bright_set[path_i][:, 2]
-            df = np.sqrt(np.linalg.norm(x_n[-1] - x_n[0]) ** 2 + kappa * np.linalg.norm(
-                np.exp(1j * phi_n[-1]) - np.exp(1j * phi_n[0])) ** 2)
+            if use_exact and len(particles.bright_impact_x[path_i]) > 0:
+                # exact n-th impact point and RF phase (thesis definition)
+                x_0 = np.asarray(particles.bright_init_x[path_i])
+                phi_0 = particles.bright_init_phi[path_i]
+                x_n = np.asarray(particles.bright_impact_x[path_i][-1])
+                phi_n = particles.bright_impact_phi[path_i][-1]
+            else:
+                # fallback for results predating the impact archive: use the
+                # first/last recorded path rows
+                path = particles.bright_set[path_i]
+                x_0, x_n = path[0, 0:2], path[-1, 0:2]
+                phi_0, phi_n = path[0, 2], path[-1, 2]
+            df = np.sqrt(np.linalg.norm(x_n - x_0) ** 2
+                         + kappa * abs(np.exp(1j * phi_n) - np.exp(1j * phi_0)) ** 2)
             particles.df20.append(float(df))
 
     def calculate_Ef(self):
@@ -860,9 +875,16 @@ class Domain:
             dmap[pi, si] = df
 
         fig, axs = plt.subplots(2, 1, figsize=(8, 7), height_ratios=[2, 1.2])
+        # clip the colour scale at kappa (as MultiPac does, ~0.04 at 1.3 GHz):
+        # only near-zero d20 -- closed resonant orbits -- shows dark; drifting
+        # quasi-resonant orbits saturate toward white
+        eigen_freq = self.eigen_freq if self.eigen_freq is not None else [0, 1300.0]
+        lmbda = c0 / (eigen_freq[1] * 1e6)
+        vmax = lmbda / (2 * np.pi)
         im = axs[0].pcolormesh(np.arange(1, len(sites) + 1), np.degrees(phis_v),
-                               dmap, cmap='hot', shading='nearest')
-        fig.colorbar(im, ax=axs[0], label='$d_\\mathrm{20}$')
+                               dmap, cmap='hot', shading='nearest',
+                               vmin=0.0, vmax=vmax)
+        fig.colorbar(im, ax=axs[0], label='$d_\\mathrm{20}$', extend='max')
         axs[0].set_xlabel('Place referring to picture below')
         axs[0].set_ylabel('Initial phase [deg]')
         axs[0].set_title(f'Distance map $d_{{20}}$   '

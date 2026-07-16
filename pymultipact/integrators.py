@@ -626,6 +626,11 @@ class Integrators:
                         # favourable surface field: secondary leaves the wall.
                         # update main particles array
                         particles.E[ind].append(Eq)
+                        # exact impact point and RF phase for the distance
+                        # function d_n
+                        particles.impact_x[ind].append(np.asarray(x_intc_p, dtype=float).copy())
+                        particles.impact_phi[ind].append(
+                            float(self.w * t_frac + particles_dummy.phi[ind, 0]))
 
                         # calculate number of secondary electrons
                         if sey.Emin < Eq < sey.Emax:
@@ -659,6 +664,9 @@ class Integrators:
                         if self.loss_model == 'always':
                             # count the impact and record its energy
                             particles.E[ind].append(Eq)
+                            particles.impact_x[ind].append(np.asarray(x_intc_p, dtype=float).copy())
+                            particles.impact_phi[ind].append(
+                                float(self.w * t_frac + particles_dummy.phi[ind, 0]))
                             if sey.Emin < Eq < sey.Emax:
                                 particles.n_secondaries[ind].append(float(sey.sey(Eq)))
                             else:
