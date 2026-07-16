@@ -44,7 +44,6 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.coverage',
     'sphinx.ext.doctest',
-    'numpydoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.inheritance_diagram',
     'matplotlib.sphinxext.mathmpl',
@@ -60,8 +59,9 @@ templates_path = ['_templates']
 # (full multipacting runs are too heavy to execute during a docs build).
 nb_execution_mode = 'off'
 
-# Let autodoc import the package on machines/CI without the FEM stack.
-autodoc_mock_imports = ['ngsolve', 'netgen']
+# Let autodoc import the package on machines/CI without the FEM stack or the
+# optional post-processing extras.
+autodoc_mock_imports = ['ngsolve', 'netgen', 'vtk', 'numba', 'icecream']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -115,10 +115,8 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-html_logo = "./images/logo.png"
+html_logo = "./images/logo.svg"
 # html_static_path = sphinx_bootstrap_theme.get_html_theme_path()
 
 # Enable numref
 numfig = True
-
-numpydoc_show_class_members = False

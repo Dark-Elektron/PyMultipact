@@ -21,6 +21,22 @@ mu0 = 4 * np.pi * 1e-7
 eps0 = 8.85418782e-12
 c0 = 299792458
 
+# repository root (parent of the package) -- used to resolve the bundled
+# sample data regardless of the caller's working directory
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _sample_path(relpath):
+    """Resolve a bundled sample-data path (sample_seys/, sample_domains/).
+
+    Tries the path as given (so explicit/relative user paths keep working),
+    then falls back to the repository root, so notebooks and scripts can run
+    from any directory once the package is installed (pip install -e .)."""
+    if os.path.exists(relpath):
+        return relpath
+    candidate = os.path.join(_REPO_ROOT, relpath)
+    return candidate if os.path.exists(candidate) else relpath
+
 
 class Domain:
     def __init__(self, project, boundary_file=None, field=None,
@@ -73,7 +89,7 @@ class Domain:
 
         self.sey = None
         # set default sey
-        self.set_sey(r'sample_seys/sey')
+        self.set_sey(_sample_path('sample_seys/sey'))
 
         self.bc_zmin, self.bc_zmax, self.bc_rmin, self.bc_rmax = [0, 0, 0, 0]
         self.gfu_E = None
@@ -82,7 +98,7 @@ class Domain:
 
         self.define_boundary(kwargs=kwargs)
         # define domain
-        self.load_boundary('sample_domains/tesla_mid_cell.n')
+        self.load_boundary(_sample_path('sample_domains/tesla_mid_cell.n'))
 
     def load_boundary(self, geopath):
         """
@@ -102,7 +118,7 @@ class Domain:
         try:
             # read geometry
             cav_geom = pd.read_csv(geopath, header=None, skiprows=3, skipfooter=1,
-                                   sep='\s+', engine='python')[[1, 0]]
+                                   sep=r'\s+', engine='python')[[1, 0]]
             self.boundary = self._resample_boundary(
                 np.array(list(cav_geom.itertuples(index=False, name=None))),
                 self.n_boundary_points)
@@ -171,7 +187,7 @@ class Domain:
 
                 # read geometry
                 cav_geom = pd.read_csv(f'{self.project_folder}/{name}.n', header=None,
-                                       sep='\s+', engine='python')[[1, 0]]
+                                       sep=r'\s+', engine='python')[[1, 0]]
 
                 self.boundary = self._resample_boundary(
                     np.array(list(cav_geom.itertuples(index=False, name=None))),
@@ -751,7 +767,7 @@ class Domain:
         fig, ax = plt.subplots()
         ax.plot(self.epks_v * self.Epk * 1e-6, cf)
         ax.set_ylim(bottom=0)
-        ax.set_xlabel('$E_\mathrm{pk}$ [MV/m]')
+        ax.set_xlabel(r'$E_\mathrm{pk}$ [MV/m]')
         ax.set_ylabel(label)
         plt.show()
 
@@ -763,7 +779,7 @@ class Domain:
         -------
 
         """
-        if len(self.Ef) == 0:
+        if not getattr(self, 'Ef', None):
             self.calculate_Ef()
         fig, ax = plt.subplots()
         ax.plot(self.epks_v * self.Epk * 1e-6, self.Ef)
@@ -785,8 +801,8 @@ class Domain:
                 ax.axhline(sey_E[np.argmax(sey_v)], c='r', ls='--')
 
         ax.set_yscale('log')
-        ax.set_xlabel('$E_\mathrm{pk}$ [MV/m]')
-        ax.set_ylabel('$E_\mathrm{f, 20}$ [eV]')
+        ax.set_xlabel(r'$E_\mathrm{pk}$ [MV/m]')
+        ax.set_ylabel(r'$E_\mathrm{f, 20}$ [eV]')
         plt.show()
 
     def plot_ef(self):
@@ -804,8 +820,8 @@ class Domain:
             ax.axhline(1, c='r')
             ax.set_yscale('log')
             ax.set_ylim(bottom=1e-3)
-            ax.set_xlabel('$E_\mathrm{pk}$ [MV/m]')
-            ax.set_ylabel('$e_\mathrm{20}/c_\mathrm{0}$')
+            ax.set_xlabel(r'$E_\mathrm{pk}$ [MV/m]')
+            ax.set_ylabel(r'$e_\mathrm{20}/c_\mathrm{0}$')
             plt.show()
         else:
             print('No secondaries to plot!')

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 610" width="660" height="610">
+  <!-- white background so the logo shows on any page/background -->
+  <rect x="0" y="0" width="660" height="610" rx="48" ry="48" fill="#ffffff"/>
+
+  <defs>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5"
+            markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 L3,5 Z" fill="#e0262b"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5"
+            markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 L3,5 Z" fill="#1c73c4"/>
+    </marker>
+  </defs>
+
+  <!-- cavity wall (black curve) -->
+  <path d="M 490 30 C 430 140, 430 230, 460 320 C 480 400, 380 500, 250 585"
+        fill="none" stroke="#111111" stroke-width="17" stroke-linecap="round"/>
+
+  <!-- incoming electron trajectory (orange) -->
+  <path d="M 25 50 C 140 130, 300 220, 455 325"
+        fill="none" stroke="#f2921d" stroke-width="15" stroke-linecap="round"/>
+
+  <!-- secondary-emission trajectories (red, solid) -->
+  <path d="M 455 325 C 400 250, 320 140, 262 65"
+        fill="none" stroke="#e0262b" stroke-width="11" stroke-linecap="round"
+        marker-end="url(#arrow-red)"/>
+  <path d="M 455 325 C 430 260, 410 210, 398 150"
+        fill="none" stroke="#e0262b" stroke-width="11" stroke-linecap="round"
+        marker-end="url(#arrow-red)"/>
+  <path d="M 455 325 C 370 350, 270 375, 188 415"
+        fill="none" stroke="#e0262b" stroke-width="11" stroke-linecap="round"
+        marker-end="url(#arrow-red)"/>
+
+  <!-- outgoing / transmitted trajectories (blue, dashed) -->
+  <path d="M 460 328 C 510 300, 560 285, 625 293"
+        fill="none" stroke="#1c73c4" stroke-width="11" stroke-linecap="round"
+        stroke-dasharray="14 12" marker-end="url(#arrow-blue)"/>
+  <path d="M 460 330 C 500 340, 550 355, 605 375"
+        fill="none" stroke="#1c73c4" stroke-width="11" stroke-linecap="round"
+        stroke-dasharray="14 12" marker-end="url(#arrow-blue)"/>
+  <path d="M 460 332 C 495 365, 540 400, 585 425"
+        fill="none" stroke="#1c73c4" stroke-width="11" stroke-linecap="round"
+        stroke-dasharray="14 12" marker-end="url(#arrow-blue)"/>
+</svg>

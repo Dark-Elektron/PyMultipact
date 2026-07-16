@@ -139,7 +139,7 @@ def get_files_from_directories(root_folder, keyword):
     return np.sort(filename_list)
 
 
-def plot_electron_evolution_spark3d(filename, power_folder, Eacc, sep='\s+', layout=None):
+def plot_electron_evolution_spark3d(filename, power_folder, Eacc, sep=r'\s+', layout=None):
     if layout is None:
         layout = [[0, 1]]
     kwargs = {"width": 0.1, "alpha": 1, "ec": 'k', "lw": 0.5}
@@ -169,7 +169,7 @@ def plot_electron_evolution_spark3d(filename, power_folder, Eacc, sep='\s+', lay
     axs[1].bar(Eacc_list, growth_factor, label='Growth factor', **kwargs)
 
     axs[1].set_ylabel("Growth factor")
-    axs[1].set_xlabel("$E_\mathrm{acc} ~\mathrm{[MV/m]}$")
+    axs[1].set_xlabel(r"$E_\mathrm{acc} ~\mathrm{[MV/m]}$")
     axs[1].legend(ncol=6, loc="upper right")
 
     axs[0].minorticks_on()
@@ -196,9 +196,9 @@ def plot_sey():
     fig, ax = plt.subplots()
     x_label = "Incident Energy [eV]"
     y_label = "SEY"
-    # data = pd.read_csv("D:\CST Studio\Multipacting\SEY\secy1.txt", sep='\s+', header=None)
-    # data2 = pd.read_csv("D:\CST Studio\Multipacting\SEY\secy2.txt", sep='\s+', header=None)
-    data = pd.read_csv("D:\Dropbox\multipacting\MPGUI21\secy1", sep='\s+', header=None)
+    # data = pd.read_csv(r"D:\CST Studio\Multipacting\SEY\secy1.txt", sep=r'\s+', header=None)
+    # data2 = pd.read_csv(r"D:\CST Studio\Multipacting\SEY\secy2.txt", sep=r'\s+', header=None)
+    data = pd.read_csv(r"D:\Dropbox\multipacting\MPGUI21\secy1", sep=r'\s+', header=None)
     sey_list = [data]  # , data2]
     label = ["Nb", "Cu"]
 
@@ -235,12 +235,12 @@ def plot_multipac_triplot(Eacc_list, Epk_Eacc_list, folders, labels, kind='tripl
         fnames = ["Ccounter.mat", "Acounter.mat", "Atcounter.mat", "Efcounter.mat", "param",
                   "geodata.n", "secy1", "counter_flevels.mat", "counter_initials.mat"]
         data = {}
-        # files_folder = "D:\Dropbox\multipacting\MPGUI21"
+        # files_folder = r"D:\Dropbox\multipacting\MPGUI21"
         for f in fnames:
             if ".mat" in f:
                 data[f] = spio.loadmat(fr"{folder}\\{f}")
             else:
-                data[f] = pd.read_csv(fr"{folder}\\{f}", sep='\s+', header=None)
+                data[f] = pd.read_csv(fr"{folder}\\{f}", sep=r'\s+', header=None)
 
         A = data["Acounter.mat"]["A"][:, 0]
         At = data["Atcounter.mat"]["At"]
@@ -314,7 +314,7 @@ def plot_multipac_triplot(Eacc_list, Epk_Eacc_list, folders, labels, kind='tripl
 
             ax.set_ylabel("$Ef_" + "{" + f"{N}" + "} [eV]$")
             ax.set_xlabel(r'$E_\mathrm{acc}$ [MV/m]')
-            # ax.set_title('$\mathbf{Final~Impact~Energy~in~eV}$')
+            # ax.set_title(r'$\mathbf{Final~Impact~Energy~in~eV}$')
 
             if min_max:
                 if len(min_max) == 2:
@@ -358,7 +358,7 @@ def plot_multipac_triplot(Eacc_list, Epk_Eacc_list, folders, labels, kind='tripl
             ax.set_ylim(np.min((A + 1) / n), ax.get_ylim()[1])
             ax.set_ylabel("$e_" + "{" + f"{N}" + "}" + "/ c_0$")
             ax.set_xlabel(r'$E_\mathrm{acc}$ [MV/m]')
-            # ax.set_title('$\mathbf{Enhanced~counter~function}$')
+            # ax.set_title(r'$\mathbf{Enhanced~counter~function}$')
 
             ax.axvline(Eacc, c='k', ls='--', lw=1.5)
             if hist:
@@ -378,10 +378,10 @@ def plot_multipac_triplot(Eacc_list, Epk_Eacc_list, folders, labels, kind='tripl
 
 
 def plot_trajectory(files_folder, loc='center'):
-    fieldparams = pd.read_csv(fr"{files_folder}\\fieldparam", sep='\s+', header=None).to_numpy()
-    geodata = pd.read_csv(fr"{files_folder}\\geodata.n", sep='\s+', header=None).to_numpy()
-    param = pd.read_csv(fr"{files_folder}\\param", sep='\s+', header=None).to_numpy()
-    elecpath = pd.read_csv(fr"{files_folder}\\elecpath", sep='\s+', header=None).to_numpy()
+    fieldparams = pd.read_csv(fr"{files_folder}\\fieldparam", sep=r'\s+', header=None).to_numpy()
+    geodata = pd.read_csv(fr"{files_folder}\\geodata.n", sep=r'\s+', header=None).to_numpy()
+    param = pd.read_csv(fr"{files_folder}\\param", sep=r'\s+', header=None).to_numpy()
+    elecpath = pd.read_csv(fr"{files_folder}\\elecpath", sep=r'\s+', header=None).to_numpy()
 
     gtype = fieldparams[0]
 
@@ -481,7 +481,7 @@ def sensitivity():
     fig, ax = plt.subplots()
     x = [1, 2, 3, 4, 5, 6, 7]
     s = [-0.987984504, 0.21315, -0.21626, 0.086534, 0.45319, 0.275492, -1.25225]
-    labels = ["$A$", "$B$", "$a$", "$b$", "$R_\mathrm{i}$", "$L$", "$R_\mathrm{eq}$"]
+    labels = ["$A$", "$B$", "$a$", "$b$", r"$R_\mathrm{i}$", "$L$", r"$R_\mathrm{eq}$"]
     ax.bar(x, s, align='center', width=1, color=['#1f77b4' if v < 0 else '#ff7f0e' for v in s])
     ax.set_xticks(x, labels)
     ax.set_ylabel(r"$\mathrm{\Delta}f/\mathrm{\Delta}p_i$ [MHz/mm]")
@@ -491,24 +491,24 @@ def sensitivity():
 
 
 def plot_cavity():
-    # data = pd.read_csv(r"D:\Dropbox\CavityDesignHub\C1092V\PostprocessingData\Data\3794_geom.txt", sep='\s+', header=None)
-    # data1 = pd.read_csv(r"D:\Dropbox\CavityDesignHub\C1092V\PostprocessingData\Data\2183_geom.txt", sep='\s+', header=None)
-    # data3 = pd.read_csv(r"D:\Dropbox\CavityDesignHub\C1092V\PostprocessingData\Data\650_geom.txt", sep='\s+', header=None)
-    # data4 = pd.read_csv(r"D:\Dropbox\CavityDesignHub\C1092V\PostprocessingData\Data\770_geom.txt", sep='\s+', header=None)
+    # data = pd.read_csv(r"D:\Dropbox\CavityDesignHub\C1092V\PostprocessingData\Data\3794_geom.txt", sep=r'\s+', header=None)
+    # data1 = pd.read_csv(r"D:\Dropbox\CavityDesignHub\C1092V\PostprocessingData\Data\2183_geom.txt", sep=r'\s+', header=None)
+    # data3 = pd.read_csv(r"D:\Dropbox\CavityDesignHub\C1092V\PostprocessingData\Data\650_geom.txt", sep=r'\s+', header=None)
+    # data4 = pd.read_csv(r"D:\Dropbox\CavityDesignHub\C1092V\PostprocessingData\Data\770_geom.txt", sep=r'\s+', header=None)
 
     # ll = [650, 770, 2183, 3345, 3794, 4123, 4250, 4618]
     ll = ['C40866_geom', 'C3794_800MHz_geom', "G6_C170_M_geom"]
     laf = ['C40866', 'C3794_800MHz', "G6_C170_M"]
     for i, x in enumerate(ll):
-        data = pd.read_csv(fr"D:\Dropbox\CavityDesignHub\C800MHz\PostprocessingData\Data\{x}.txt", sep='\s+',
+        data = pd.read_csv(fr"D:\Dropbox\CavityDesignHub\C800MHz\PostprocessingData\Data\{x}.txt", sep=r'\s+',
                            header=None)
         plt.rcParams["figure.figsize"] = (5, 5)
         plt.plot(data[1] * 1000, data[0] * 1000, lw=5, label=laf[i], ls='--')
         # plt.plot(data1[1]*1e3, data1[0]*1e3, lw=6, label="C2183", ls='--')
         # plt.plot(data3[1]*1e3, data3[0]*1e3, lw=6, label="C650", ls='--')
         # plt.plot(data4[1]*1e3, data4[0]*1e3, lw=6, label="C770", ls='--')
-        # plt.plot(data1[1]*1e3, data1[0]*1e3, lw=3, label="$\mathrm{FCC_{UROS1.0}}$")
-        # plt.plot(data2[1]*1e3, data2[0]*1e3, lw=3, label="$\mathrm{FCC_{UROS1.1}}$")
+        # plt.plot(data1[1]*1e3, data1[0]*1e3, lw=3, label=r"$\mathrm{FCC_{UROS1.0}}$")
+        # plt.plot(data2[1]*1e3, data2[0]*1e3, lw=3, label=r"$\mathrm{FCC_{UROS1.1}}$")
         plt.legend(loc='lower left')
 
         x_label = "z [mm]"
@@ -557,7 +557,7 @@ def spark_3D_statistics(Eacc_cst):
     file_folders = get_files_from_directories(files_folder, 'Surface3D')
 
     # read input SEY
-    input_sey = pd.read_csv(fr"D:\CST Studio\3. W\Multipacting\Spark3D\user_defined_sey.csv", sep='\s+', header=None)
+    input_sey = pd.read_csv(fr"D:\CST Studio\3. W\Multipacting\Spark3D\user_defined_sey.csv", sep=r'\s+', header=None)
 
     # Define the range of values
     min_value = 0.72
@@ -632,7 +632,7 @@ def plot_cst_pic_results(folders, label, Eaccs_eigen, Eacc, xlim=None, ylim=None
         kwargs = {"width": 0.1, "alpha": 1, "ec": 'k', "lw": 0.5}
 
     for Eacc_eigen, pff in zip(Eaccs_eigen, pffs):
-        particle_vs_ff = pd.read_csv(pff, sep='\s+', names=['field_factor', 'particles'], header=None)
+        particle_vs_ff = pd.read_csv(pff, sep=r'\s+', names=['field_factor', 'particles'], header=None)
         particle_vs_ff = particle_vs_ff.sort_values('field_factor')
         # plt.plot(particle_vs_ff['field_factor'] * Eacc_eigen * 1e-6, particle_vs_ff[result_name], marker='o',
         #              mec='k')
@@ -658,7 +658,7 @@ def plot_cst_pic_results(folders, label, Eaccs_eigen, Eacc, xlim=None, ylim=None
     figsize = (10, 3)
     fig, ax = plt.subplots(figsize=figsize)
     for Eacc_eigen, folder in zip(Eaccs_eigen, folders):
-        particle_vs_ff = pd.read_csv(fr"{folder}\Export\Particle vs. Time_0D_yAtX.txt", sep='\s+',
+        particle_vs_ff = pd.read_csv(fr"{folder}\Export\Particle vs. Time_0D_yAtX.txt", sep=r'\s+',
                                      names=['field_factor', 'particles'], header=None)
         # get secondary emisison and low pass filter
 
@@ -678,7 +678,7 @@ def plot_cst_pic_results(folders, label, Eaccs_eigen, Eacc, xlim=None, ylim=None
                 ff = int(ff)
 
             pemission = fr"{folder}\\Export\\Emitted Secondaries_(field_factor={ff}).txt"
-            sec_particles_vs_time = pd.read_csv(pemission, names=['time', 'particles'], header=None, sep='\s+')
+            sec_particles_vs_time = pd.read_csv(pemission, names=['time', 'particles'], header=None, sep=r'\s+')
 
             # low pass filter
             sec_low_pass_filter = butter_lowpass_filter(sec_particles_vs_time['particles'], cutoff, fs, order)

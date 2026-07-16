@@ -18,9 +18,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -30,12 +30,12 @@ jobs:
         # (nb_execution_mode = 'off'), so the docs build needs no FEM stack.
         run: >
           pip install numpy scipy pandas matplotlib ipywidgets
-          sphinx myst-nb sphinx-immaterial numpydoc
+          "sphinx<9" myst-nb sphinx-immaterial
 
       - name: Build documentation
         run: sphinx-build -b html docs/source docs/build/html
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs/build/html
 

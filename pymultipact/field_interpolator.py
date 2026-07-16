@@ -2,11 +2,11 @@
 Field access objects for PyMultipact.
 
 Two implementations share one interface so they are interchangeable in the
-integrator:
+integrator::
 
     .e(points)        -> (N, 2) complex   bulk E field; RAISES if any point is
-                                           outside the domain (this drives the
-                                           exception-based boundary detection)
+                                          outside the domain (this drives the
+                                          exception-based boundary detection)
     .h(points)        -> (N, 1) complex   bulk H field (same raise behaviour)
     .e_exact(point)   -> (1, 2) complex   exact FEM E at a single point
     .h_exact(point)   -> (1, 1) complex   exact FEM H at a single point

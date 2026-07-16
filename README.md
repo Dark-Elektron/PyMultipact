@@ -137,7 +137,7 @@ notebook) is built with Sphinx and deployed to GitHub Pages by
 `.github/workflows/docs.yml` on every push to `main`. To build locally:
 
 ```bash
-pip install sphinx myst-nb sphinx-immaterial numpydoc
+pip install -e .[docs]
 sphinx-build -b html docs/source docs/build/html
 ```
 

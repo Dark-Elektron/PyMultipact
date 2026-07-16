@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pymultipact"
+version = "0.1.0"
+description = "Multipacting analysis of 2D axisymmetric RF structures with an internal NGSolve eigenmode solver"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Sosoho-Abasi Udongwo" }]
+requires-python = ">=3.11"
+# Floors, not hard pins: the code runs on numpy 1.26 through 2.x and
+# python 3.11 through 3.14. ngsolve pulls in the correct netgen-mesher
+# automatically (the PyPI package named "netgen" is an unrelated project --
+# do NOT add it).
+dependencies = [
+    "ngsolve>=6.2.2402",
+    "numpy>=1.26",
+    "scipy>=1.13",
+    "pandas>=2.0",
+    "matplotlib>=3.9",
+    "ipywidgets>=8.1",
+    "icecream>=2.1",
+]
+
+[project.urls]
+Repository = "https://github.com/Dark-Elektron/PyMultipact"
+Documentation = "https://dark-elektron.github.io/PyMultipact/"
+
+[project.optional-dependencies]
+# post-processing / comparison utilities (multipac_plot, multipact modules)
+post = [
+    "vtk",
+    "numba",
+]
+dev = [
+    "pytest",
+    "jupyterlab",
+    "ipykernel",
+    "nbconvert",
+]
+docs = [
+    "sphinx<9",          # sphinx-immaterial not yet compatible with sphinx 9
+    "myst-nb",
+    "sphinx-immaterial",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pymultipact*"]

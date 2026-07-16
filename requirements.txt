@@ -1,17 +1,6 @@
-ngsolve~=6.2.2402
-netgen~=0.3.0
-vtk~=9.2.2
-mpi4py~=3.1.4
-requests~=2.31.0
-beautifulsoup4~=4.12.3
-lxml~=5.2.2
-openpyxl
-pyyaml~=6.0.1
-pillow~=10.3.0   # Image processing
-icecream~=2.1.3  # Sweet debugging print utility
-jupyterlab~=4.2.0
-ipywidgets~=8.1.2
-numpy~=1.26.4
-pandas~=2.0.0
-scipy~=1.13.0
-matplotlib~=3.9.0
+# Dependencies are declared in pyproject.toml -- this file is a convenience
+# pointer for `pip install -r requirements.txt`.
+#
+# Extras: [post] vtk/numba post-processing, [dev] tests + notebooks,
+#         [docs] sphinx documentation build.
+-e .[post,dev,docs]
