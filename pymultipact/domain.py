@@ -841,15 +841,31 @@ class Domain:
         else:
             print('No secondaries to plot!')
 
-    def plot_df(self, epk_i):
-        """MultiPac-style distance map: d_20 over (emission site, initial phase)
-        for the epk_i-th field level of the sweep. Blank cells = no electron
+    def plot_df(self, epk_i, metric='d20', vmax=None):
+        """MultiPac-style distance map over (emission site, initial phase) for
+        the epk_i-th field level of the sweep. Grey cells = no electron
         survived to 20 impacts from that (site, phase).
 
         Parameters
         ----------
         epk_i: int
             Index into the Epk sweep (self.epks_v).
+        metric: str
+            'd20' (default): distance between the initial (site, phase) and
+            the nearest of the last two impacts. For two-point multipacting
+            the orbit returns to the launch side only on every other impact,
+            so taking the closer of impacts 19 and 20 removes the arbitrary
+            branch parity: launches at the resonant phase give d ~ 0 (dark
+            core) and off-core launches grow with their phase offset --
+            the same graded structure as MultiPac's d20 map.
+            'd20_strict': the literal Yla-Oijala Eq. 3.2.3 (20th impact
+            only). Carries a ~pi phase offset whenever the 20th impact lands
+            on the opposite branch.
+            'closure': distance between the 20th and 18th impacts (closure of
+            the two-impact map); zero for any phase-locked orbit.
+        vmax: float, None or 'kappa'
+            Colour scale maximum. 'kappa' (default for 'd20') clips at
+            lambda/(2 pi) like MultiPac's d20 display; None autoscales.
         """
         particles_objects = self.particles_objects
         if not particles_objects:
@@ -859,35 +875,76 @@ class Domain:
         if not hasattr(particles, 'bright_init_x') or not hasattr(particles, 'sites_init'):
             print("Result predates the bright-identity archive; re-run the analysis.")
             return
+        eigen_freq = self.eigen_freq if self.eigen_freq is not None else [0, 1300.0]
+        lmbda = c0 / (eigen_freq[1] * 1e6)
+        kappa = lmbda / (2 * np.pi)
         if not hasattr(particles, 'df20'):
-            lmbda = c0 / (self.eigen_freq[1] * 1e6)
             self.calculate_distance_function(particles, lmbda)
         epks_v = np.asarray(self.epks_v)
         boundary = np.asarray(self.boundary)
+
+        # per-bright metric values
+        def _dist(x_a, phi_a, x_b, phi_b):
+            return float(np.sqrt(
+                np.linalg.norm(np.asarray(x_a) - np.asarray(x_b)) ** 2
+                + kappa * abs(np.exp(1j * phi_a) - np.exp(1j * phi_b)) ** 2))
+
+        if metric == 'closure':
+            values = []
+            for xs, ps in zip(particles.bright_impact_x, particles.bright_impact_phi):
+                values.append(_dist(xs[-1], ps[-1], xs[-3], ps[-3])
+                              if len(xs) >= 3 else np.nan)
+            label = 'closure $d(x_{20}, x_{18})$'
+        elif metric == 'd20' and not hasattr(particles, 'bright_impact_x'):
+            # results predating the impact archive
+            values = particles.df20
+            label = '$d_\\mathrm{20}$'
+        elif metric == 'd20':
+            # parity-robust: closer of the last two impacts to the launch point
+            values = []
+            for x0, p0, xs, ps in zip(particles.bright_init_x,
+                                      particles.bright_init_phi,
+                                      particles.bright_impact_x,
+                                      particles.bright_impact_phi):
+                if len(xs) >= 2:
+                    values.append(min(_dist(x0, p0, xs[-1], ps[-1]),
+                                      _dist(x0, p0, xs[-2], ps[-2])))
+                elif len(xs) == 1:
+                    values.append(_dist(x0, p0, xs[-1], ps[-1]))
+                else:
+                    values.append(np.nan)
+            label = '$d_\\mathrm{20}$'
+            if vmax is None:
+                vmax = 'kappa'   # MultiPac-style display by default
+        elif metric == 'd20_strict':
+            values = particles.df20
+            label = '$d_\\mathrm{20}$ (strict)'
+        else:
+            raise ValueError(f"metric must be 'd20', 'd20_strict' or 'closure', "
+                             f"got {metric!r}")
 
         sites = np.asarray(particles.sites_init)
         phis_v = np.asarray(particles.phis_v)
         dmap = np.full((len(phis_v), len(sites)), np.nan)
         for bx, bphi, df in zip(particles.bright_init_x, particles.bright_init_phi,
-                                particles.df20):
+                                values):
             si = int(np.argmin(np.linalg.norm(sites - np.asarray(bx), axis=1)))
             pi = int(np.argmin(np.abs(phis_v - bphi)))
             dmap[pi, si] = df
 
         fig, axs = plt.subplots(2, 1, figsize=(8, 7), height_ratios=[2, 1.2])
-        # clip the colour scale at kappa (as MultiPac does, ~0.04 at 1.3 GHz):
-        # only near-zero d20 -- closed resonant orbits -- shows dark; drifting
-        # quasi-resonant orbits saturate toward white
-        eigen_freq = self.eigen_freq if self.eigen_freq is not None else [0, 1300.0]
-        lmbda = c0 / (eigen_freq[1] * 1e6)
-        vmax = lmbda / (2 * np.pi)
+        cmap = plt.get_cmap('hot').copy()
+        cmap.set_bad('0.85')   # non-surviving cells: light grey, not white
+        if vmax == 'kappa':
+            vmax = kappa       # MultiPac-style display (~0.04 at 1.3 GHz)
         im = axs[0].pcolormesh(np.arange(1, len(sites) + 1), np.degrees(phis_v),
-                               dmap, cmap='hot', shading='nearest',
+                               dmap, cmap=cmap, shading='nearest',
                                vmin=0.0, vmax=vmax)
-        fig.colorbar(im, ax=axs[0], label='$d_\\mathrm{20}$', extend='max')
+        fig.colorbar(im, ax=axs[0], label=label,
+                     extend='max' if vmax is not None else 'neither')
         axs[0].set_xlabel('Place referring to picture below')
         axs[0].set_ylabel('Initial phase [deg]')
-        axs[0].set_title(f'Distance map $d_{{20}}$   '
+        axs[0].set_title(f'Distance map ({metric})   '
                          f'$E_\\mathrm{{pk}}$ = {epks_v[epk_i] * self.Epk * 1e-6:.1f} MV/m')
 
         axs[1].plot(boundary[:, 0], boundary[:, 1], 'r', lw=1)

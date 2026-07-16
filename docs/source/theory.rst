@@ -252,6 +252,15 @@ measures how exactly the electron returns to its starting point: small
 :math:`d_{20}` identifies stable (fixed-point) multipacting orbits.
 ``Domain.plot_df`` renders it as a map over emission site and initial phase.
 
+For two-point multipacting the orbit returns to the launch side only on every
+*other* impact, so the plotted default compares the launch point with the
+nearest of the last two impacts — this removes the arbitrary branch parity of
+the impact count and reproduces MultiPac's graded map (dark core at the
+resonant fixed-point phase, growing with the launch offset). The literal
+20th-impact definition (``metric='d20_strict'``) and the closure of the
+two-impact map (``metric='closure'``, zero for any phase-locked orbit) are
+also available.
+
 .. note::
     **Comparing counter functions with MultiPac.** By symmetry of the RF
     oscillation, exactly half of the launched :math:`(\mathbf{x}_i, \psi_i)`
