@@ -8,7 +8,6 @@ import netgen.occ as ngocc
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.interpolate import CubicSpline
 from ipywidgets import IntSlider, interact, Layout
 import multiprocessing as mp
 import pickle
@@ -351,124 +350,165 @@ class Domain:
     def track_particles(self, mode=1, integrator='rk4'):
         pass
 
-    def analyse_multipacting_parallel(self, proc_count=1, mode=1, xrange=None, epks=None, phis=None,
-                                      v_init=2, integrator='rk4', step=None):
+    def analyse_multipacting(self, mode=1, xrange=None, epks=None, phis=None,
+                             v_init=2, integrator='rk4', step=None, proc_count=None):
         """
+        Analyse multipacting. The Epk sweep is run in parallel by default.
 
         Parameters
         ----------
-        proc_count: int
-
         mode: int
-
-        init_pos:
-        epks
-        phis
-        v_init:
-        init_points:
-        integrator
-        parallel
+            Eigenmode index
+        xrange: list, ndarray
+            Range of surface emission sites (z interval)
+        epks: list, ndarray
+            Peak surface electric field sweep values [V/m]
+        phis: list, ndarray
+            Initial phases
+        v_init: float, int
+            Particle emission energy [eV]
+        integrator: str
+            Numerical integration scheme
+        step: float
+            Minimum distance between emission sites
+        proc_count: int or None
+            Number of worker processes for the Epk sweep. None (default)
+            chooses automatically from the machine's CPU count and the number
+            of sweep points; 1 runs in-process without spawning workers.
+            Note for Windows scripts: guard the call with
+            ``if __name__ == '__main__':`` (multiprocessing spawn requirement);
+            notebooks are fine as-is.
 
         Returns
         -------
 
         """
-
-        # save mode fields
-        with open(f"{self.project_folder}/gfu_EH.pkl", "wb") as f:
-            pickle.dump([self.gfu_E[mode], self.gfu_H[mode]], f)
-
-        processes = []
-        self.fig, self.ax = plt.subplots()
         lmbda = c0 / (self.eigen_freq[mode] * 1e6)
         if self.sey is None:
             print("Secondary emission yield not defined, using default sey.")
 
-        xpnts_surf = self.boundary[(self.boundary[:, 1] > 0) & (self.boundary[:, 0] > min(self.boundary[:, 0])) & (
+        xpnts_surf_ = self.boundary[(self.boundary[:, 1] > 0) & (self.boundary[:, 0] > min(self.boundary[:, 0])) & (
                 self.boundary[:, 0] < max(self.boundary[:, 0]))]
-        self.ax.plot(xpnts_surf[:, 0], xpnts_surf[:, 1])
-        Esurf = [ng.Norm(self.gfu_E[mode])(self.mesh(xi, yi)) for (xi, yi) in xpnts_surf]
+        Esurf = [ng.Norm(self.gfu_E[mode])(self.mesh(xi, yi)) for (xi, yi) in xpnts_surf_]
         self.Epk = (max(Esurf))
 
         if epks is None:
-            self.epks_v = 1 / self.Epk * 1e6 * np.linspace(1, 80, 4)
+            self.epks_v = 1 / self.Epk * 1e6 * np.linspace(0, 80, 192)
         else:
-            self.epks_v = epks
+            # user-passed peak fields are in V/m; normalise by 1/Epk
+            self.epks_v = 1 / self.Epk * np.asarray(epks)
 
         if phis is None:
-            phi_v = np.linspace(0, 2 * np.pi, 20)  # <- initial phase
+            phi_v = np.linspace(0, 2 * np.pi, 72)  # <- initial phase
         else:
             phi_v = phis
 
         if xrange is None:
-            xrange = [-0.006, 0.000]
+            xrange = [-0.00025, -0.000]
 
-        # get surface points
-        pec_boundary = self.mesh.Boundaries("default")
-        bel = [xx.vertices for xx in pec_boundary.Elements()]
-        bel_unique = list(set(itertools.chain(*bel)))
-        xpnts_surf = sorted([self.mesh.vertices[xy.nr].point for xy in bel_unique])
-        xsurf = np.array(xpnts_surf)
+        # worker count: leave one core free, never more workers than sweep points
+        if proc_count is None:
+            proc_count = max(1, min(mp.cpu_count() - 1, len(self.epks_v)))
+        proc_count = max(1, int(proc_count))
+        print(f"Running Epk sweep ({len(self.epks_v)} points) on {proc_count} "
+              f"process{'es' if proc_count > 1 else ''}.")
 
-        self.em = EMField(copy.deepcopy(self.gfu_E[mode]), copy.deepcopy(self.gfu_H[mode]))
+        # save mode fields for the workers
+        with open(f"{self.project_folder}/gfu_EH.pkl", "wb") as f:
+            pickle.dump([self.gfu_E[mode], self.gfu_H[mode]], f)
 
-        # define one internal point
-        xin = [0, 0]
-        no_of_remaining_particles = []
-
-        # calculate time for 10 cycles, 20 alternations
-        T = 1 / (self.eigen_freq[mode] * 1e6) * 10
-        lmbda = c0 / (self.eigen_freq[mode] * 1e6)
-
-        self.particles_left = []
-        self.particles_nhits = []
-        self.particles_objects = []
-        start = time.time()
-
+        # round-robin split of the sweep, remembering original indices so the
+        # results can be re-assembled in epks_v order
         divided_lists = [[] for _ in range(proc_count)]
+        divided_idx = [[] for _ in range(proc_count)]
         for idx, value in enumerate(self.epks_v):
             divided_lists[idx % proc_count].append(value)
-
+            divided_idx[idx % proc_count].append(idx)
         proc_epks_list = [np.array(lst) for lst in divided_lists]
 
+        # remove stale worker outputs so a crashed worker cannot be silently
+        # replaced by results from a previous run
         for p in range(proc_count):
-        #
-        # epks_len = len(self.epks_v)
-        # share = round(epks_len / proc_count)
-        #
-        # for p in range(proc_count):
-        #     # try:
-        #     if p < proc_count - 1:
-        #         proc_epks_list = self.epks_v[p * share:p * share + share]
-        #     else:
-        #         proc_epks_list = self.epks_v[p * share:]
-            service = mp.Process(target=self._analyse_multipacting, args=(p, self.project_folder, self.eigen_freq,
-                                                                          mode, xrange, proc_epks_list[p], phi_v,
-                                                                          v_init, self.sey, self.Epk, step,
-                                                                          self.bounding_rect))
-            service.start()
-            processes.append(service)
+            stale = f"{self.project_folder}/mresults_{p}"
+            if os.path.exists(stale):
+                try:
+                    os.remove(stale)
+                except OSError:
+                    pass
 
-        # Wait for all processes to complete
-        for service in processes:
-            service.join()
+        start = time.time()
+        if proc_count == 1:
+            # in-process, same code path as the workers, without a subprocess
+            self._analyse_multipacting(0, self.project_folder, self.eigen_freq,
+                                       mode, xrange, proc_epks_list[0], phi_v,
+                                       v_init, self.sey, self.Epk, step,
+                                       self.bounding_rect)
+        else:
+            processes = []
+            for p in range(proc_count):
+                service = mp.Process(target=self._analyse_multipacting,
+                                     args=(p, self.project_folder, self.eigen_freq,
+                                           mode, xrange, proc_epks_list[p], phi_v,
+                                           v_init, self.sey, self.Epk, step,
+                                           self.bounding_rect))
+                service.start()
+                processes.append(service)
 
-        # compile results
-        self.particles_left = []
-        self.particles_objects = []
-        self.cn_c0 = []
+            # Wait for all processes to complete
+            for service in processes:
+                service.join()
+
+        # compile results, restoring the original epks_v order (the round-robin
+        # split would otherwise leave cn_c0 interleaved relative to epks_v and
+        # plot_cf would pair wrong values)
+        cf_by_idx = {}
+        po_by_idx = {}
         for p in range(proc_count):
-            # Saving model to pickle file
-            with open(f"{self.project_folder}/mresults_{p}", "rb") as file:
+            result_file = f"{self.project_folder}/mresults_{p}"
+            if not os.path.exists(result_file):
+                raise RuntimeError(f"Worker {p} produced no result file "
+                                   f"({result_file}) -- it probably crashed; "
+                                   f"check its console output.")
+            with open(result_file, "rb") as file:
                 m_result = pickle.load(file)
 
-            self.cn_c0.extend(m_result['cn/c0'])
-            self.particles_objects.extend(m_result['particles_objects'])
+            for local_i, global_i in enumerate(divided_idx[p]):
+                cf_by_idx[global_i] = m_result['cn/c0'][local_i]
+                po_by_idx[global_i] = m_result['particles_objects'][local_i]
 
             if p == 0:
                 self.n_init_particles = m_result['n_init_particles']
 
+        self.cn_c0 = np.array([cf_by_idx[i] for i in range(len(self.epks_v))])
+        self.particles_objects = [po_by_idx[i] for i in range(len(self.epks_v))]
+        self.particles_left = [len(po.bright_set) for po in self.particles_objects]
+        self.particles_nhits = [po.nhit[0] if len(po.nhit) else 0 for po in self.particles_objects]
+
+        # distance function of each surviving (bright) trajectory
+        for po in self.particles_objects:
+            self.calculate_distance_function(po, lmbda)
+
+        # persist combined results
+        mresult = {'cn/c0': self.cn_c0,
+                   'particles_objects': self.particles_objects,
+                   'n_init_particles': self.n_init_particles,
+                   'Epk': self.Epk,
+                   'epks': self.epks_v,
+                   'phis_v': phi_v}
+        with open(f"{self.project_folder}/mresults.pkl", "wb") as file:
+            pickle.dump(mresult, file)
+
         print("Total runtime:: ", time.time() - start)
+        print("Done with multipacting analysis.")
+
+    def analyse_multipacting_parallel(self, proc_count=1, mode=1, xrange=None, epks=None, phis=None,
+                                      v_init=2, integrator='rk4', step=None):
+        """Deprecated alias -- analyse_multipacting is parallel by default now."""
+        print("analyse_multipacting_parallel is deprecated; use analyse_multipacting "
+              "(parallel by default, proc_count=... to override).")
+        return self.analyse_multipacting(mode=mode, xrange=xrange, epks=epks, phis=phis,
+                                         v_init=v_init, integrator=integrator, step=step,
+                                         proc_count=proc_count)
 
     @staticmethod
     def _analyse_multipacting(proc_id, folder, eigen_freq, mode, xrange, procs_epks, phis,
@@ -495,6 +535,9 @@ class Domain:
         w = 2 * np.pi * eigen_freq[mode] * 1e6
         integrator = Integrators(mesh, w, bounding_rect=bounding_rect)
 
+        # Field object built once (independent of the Epk sweep value).
+        em = EMField(gfu_E, gfu_H)
+
         particles_left = []
         particles_nhits = []
         particles_objects = []
@@ -507,7 +550,6 @@ class Domain:
 
             particles = Particles(xrange, v_init, xsurf, phis, cmap='jet', step=step)
 
-            em = EMField(gfu_E, gfu_H)
             n_init_particles = len(particles.x)
             print(f'\t{proc_id}: Initial number of particles: ', n_init_particles)
 
@@ -550,140 +592,6 @@ class Domain:
 
         print(f"\tProc {proc_id} done with multipacting analysis. Time: ", time.time() - start)
 
-    def analyse_multipacting(self, mode=1, xrange=None, epks=None, phis=None,
-                             v_init=2, integrator='rk4', step=None):
-        """
-        Analyse multipacting
-
-        Parameters
-        ----------
-        mode: int
-            Eigenmode index
-        xrange: list, ndarray
-            range of x
-        epks: list, ndarray
-            Electric field sweep range
-        phis: list, ndarray
-            Phase advance sweep range
-        v_init: float, int
-            Particle emission velocity
-        init_points: list, ndarray
-            Initial emission points range
-        integrator: Integrators
-            Select numerical integration scheme
-        step: int
-            Initial surface points step
-
-        Returns
-        -------
-
-        """
-
-        lmbda = c0 / (self.eigen_freq[mode] * 1e6)
-        if self.sey is None:
-            print("Secondary emission yield not defined, using default sey.")
-
-        xpnts_surf_ = self.boundary[(self.boundary[:, 1] > 0) & (self.boundary[:, 0] > min(self.boundary[:, 0])) & (
-                self.boundary[:, 0] < max(self.boundary[:, 0]))]
-
-        Esurf = [ng.Norm(self.gfu_E[mode])(self.mesh(xi, yi)) for (xi, yi) in xpnts_surf_]
-        self.Epk = (max(Esurf))
-
-        if epks is None:
-            self.epks_v = 1 / self.Epk * 1e6 * np.linspace(0, 80, 192)
-        else:
-            self.epks_v = 1 / self.Epk * epks
-
-        if phis is None:
-            phi_v = np.linspace(0, 2 * np.pi, 72)  # <- initial phase
-        else:
-            phi_v = phis
-
-        if xrange is None:
-            xrange = [-0.00025, -0.000]
-
-        # get surface points
-        pec_boundary = self.mesh.Boundaries("default")
-        bel = [xx.vertices for xx in pec_boundary.Elements()]
-        bel_unique = list(set(itertools.chain(*bel)))
-        xpnts_surf = sorted([self.mesh.vertices[xy.nr].point for xy in bel_unique])
-        xsurf = np.array(xpnts_surf)
-
-        # define one internal point
-        xin = [0, 0]
-
-        w = 2 * np.pi * self.eigen_freq[mode] * 1e6
-        integrators = Integrators(self.mesh, w, bounding_rect=self.bounding_rect)
-        integrators.ax.plot(xpnts_surf_[:, 0], xpnts_surf_[:, 1])
-        no_of_remaining_particles = []
-
-        # calculate time for 10 cycles, 20 alternations
-        T = 1 / (self.eigen_freq[mode] * 1e6) * 10
-        lmbda = c0 / (self.eigen_freq[mode] * 1e6)
-        dt = 1 / (self.eigen_freq[mode] * 1e6 * 20 * 6)
-
-        self.particles_left = []
-        self.particles_nhits = []
-        self.particles_objects = []
-        start = time.time()
-        for epk in self.epks_v:
-            sub_start = time.time()
-            t = 0
-            PLOT = False
-            error = False
-            counter = 0
-
-            particles = Particles(xrange, v_init, xsurf, phi_v, cmap='jet', step=step)
-
-            self.n_init_particles = len(particles.x)
-            print('Initial number of particles: ', self.n_init_particles)
-            em = EMField(copy.deepcopy(self.gfu_E[mode]), copy.deepcopy(self.gfu_H[mode]))
-
-            # move particles with initial velocity. ensure all initial positions after first move lie inside the bounds
-            # particles.x = particles.x + particles.u * dt  # remove later
-
-            record = {}
-            scale = epk  # <- scale Epk to 1 MV/m and multiply by sweep value
-            #     while t < T:
-            while t < 1000e-10:
-                if particles.len != 0:
-                    particles.save_old()
-                    integrators.rk4(particles, t, dt, em, scale, self.sey)
-                    particles.update_record()
-                counter += 1
-                t += dt
-
-            self.calculate_distance_function(particles, lmbda)
-            self.particles_objects.append(particles)
-
-            if len(particles.nhit) == 0:
-                self.particles_nhits.append(0)
-            else:
-                self.particles_nhits.append(particles.nhit[0])
-
-            self.particles_left.append(len(particles.bright_set))
-            print(
-                f"Epk: {epk * self.Epk * 1e-6} MV/m, particles in bright set: {len(particles.bright_set)}, time: {time.time() - sub_start}")
-
-        print("Total runtime:: ", time.time() - start)
-
-        self.cn_c0 = np.array(self.particles_left) / self.n_init_particles
-        # results
-        mresult = {'cn/c0': np.array(self.particles_left) / self.n_init_particles,
-                   'particles_objects': self.particles_objects,
-                   'n_init_particles': self.n_init_particles,
-                   'Epk': self.Epk,
-                   'epks': self.epks_v,
-                   'phis_v': phi_v}
-
-        # Saving model to pickle file
-        with open(f"{self.project_folder}/mresults.pkl", "wb") as file:
-            pickle.dump(mresult,
-                        file)  # Dump function is used to write the object into the created file in byte format.
-
-        print("Done with multipacting analysis.")
-        plt.show()
-
     def set_sey(self, sey_filepath):
         """
         Set custom secondary emission yield
@@ -719,20 +627,31 @@ class Domain:
 
     def calculate_distance_function(self, particles, lmbda):
         kappa = lmbda / (2 * np.pi)
-        # calculate distance function
+        # distance function of each bright (20-hit) trajectory: distance in
+        # (position, phase) space between the final and initial state, stored
+        # aligned with bright_set. (The old code appended these into df_n
+        # indexed by bright number, which pointed at unrelated particles.)
+        particles.df20 = []
         for path_i in range(len(particles.bright_set)):
             x_n, phi_n = particles.bright_set[path_i][:, 0:2], particles.bright_set[path_i][:, 2]
             df = np.sqrt(np.linalg.norm(x_n[-1] - x_n[0]) ** 2 + kappa * np.linalg.norm(
                 np.exp(1j * phi_n[-1]) - np.exp(1j * phi_n[0])) ** 2)
-            particles.df_n[path_i].append(df)
+            particles.df20.append(float(df))
 
     def calculate_Ef(self):
+        """Mean FINAL impact energy of the electrons that reached 20 hits (the
+        bright set) -- zero wherever nothing survived to 20 hits, exactly like
+        the paper's Ef_20. Computing this over the leftover particles instead
+        produced spurious out-of-band spikes from runaway lost particles."""
         self.Ef = []
         for particles in self.particles_objects:
-            #     print(particles.nhit)
-            Ef_p = [particle_energy[-1] if len(particle_energy) != 0 else 0 for particle_energy in particles.E]
-            #     print(np.sum(Ef_p)/len(Ef_p) if len(Ef_p) > 0 else 0)
-            #     print(len(Ef_p), Ef_p)
+            bright_E = getattr(particles, 'bright_E', None)
+            if bright_E is None:
+                # backward compatibility with result pickles from before the
+                # bright-history archive existed
+                Ef_p = [pe[-1] for pe in particles.E if len(pe) != 0]
+            else:
+                Ef_p = [be[-1] for be in bright_E if len(be) != 0]
             self.Ef.append(np.sum(Ef_p) / len(Ef_p) if len(Ef_p) > 0 else 0)
 
         return self.Ef
@@ -760,14 +679,37 @@ class Domain:
             self.calculate_Ef()
         fig, ax = plt.subplots()
         ax.plot(self.epks_v * self.Epk * 1e-6, self.Ef)
-        ax.axhline(50, c='r')
-        ax.set_ylim(0, 100)
+
+        # SEY reference lines: first/second crossover energies (sey = 1,
+        # solid) and the peak-sey energy (dashed), from the loaded SEY table.
+        if self.sey is not None:
+            sey_E = np.asarray(self.sey.data['E'], dtype=float)
+            sey_v = np.asarray(self.sey.data['sey'], dtype=float)
+            above = sey_v > 1
+            crossings = []
+            for i in np.nonzero(np.diff(above.astype(int)) != 0)[0]:
+                # linear interpolation of the sey = 1 crossing in [E_i, E_i+1]
+                crossings.append(sey_E[i] + (1 - sey_v[i]) * (sey_E[i + 1] - sey_E[i])
+                                 / (sey_v[i + 1] - sey_v[i]))
+            for E_cross in crossings:
+                ax.axhline(E_cross, c='r')
+            if np.any(above):
+                ax.axhline(sey_E[np.argmax(sey_v)], c='r', ls='--')
+
+        ax.set_yscale('log')
         ax.set_xlabel('$E_\mathrm{pk}$ [MV/m]')
-        ax.set_ylabel('$E_\mathrm{f}$ [eV]')
+        ax.set_ylabel('$E_\mathrm{f, 20}$ [eV]')
         plt.show()
 
     def plot_ef(self):
-        secondaries = [(sum([np.prod(nn) for nn in particles.n_secondaries])) for particles in self.particles_objects]
+        # e20/c0 from the archived impact histories of the 20-hit (bright)
+        # electrons. Each archived list has at most ~20 entries; using the
+        # live (previously misaligned) lists let entries from many different
+        # particles pile into one list and the product blow up astronomically.
+        secondaries = [
+            sum(np.prod(nn) for nn in getattr(particles, 'bright_n_secondaries',
+                                              particles.n_secondaries))
+            for particles in (self.particles_objects or [])]
         if len(secondaries) > 0:
             fig, ax = plt.subplots()
             ax.plot(self.epks_v * self.Epk * 1e-6, 2 * (np.array(secondaries) + 1) / self.n_init_particles)
@@ -779,6 +721,59 @@ class Domain:
             plt.show()
         else:
             print('No secondaries to plot!')
+
+    def plot_df(self, epk_i):
+        """MultiPac-style distance map: d_20 over (emission site, initial phase)
+        for the epk_i-th field level of the sweep. Blank cells = no electron
+        survived to 20 impacts from that (site, phase).
+
+        Parameters
+        ----------
+        epk_i: int
+            Index into the Epk sweep (self.epks_v).
+        """
+        particles_objects = self.particles_objects
+        if not particles_objects:
+            print("No results to plot -- run analyse_multipacting first.")
+            return
+        particles = particles_objects[epk_i]
+        if not hasattr(particles, 'bright_init_x') or not hasattr(particles, 'sites_init'):
+            print("Result predates the bright-identity archive; re-run the analysis.")
+            return
+        if not hasattr(particles, 'df20'):
+            lmbda = c0 / (self.eigen_freq[1] * 1e6)
+            self.calculate_distance_function(particles, lmbda)
+        epks_v = np.asarray(self.epks_v)
+        boundary = np.asarray(self.boundary)
+
+        sites = np.asarray(particles.sites_init)
+        phis_v = np.asarray(particles.phis_v)
+        dmap = np.full((len(phis_v), len(sites)), np.nan)
+        for bx, bphi, df in zip(particles.bright_init_x, particles.bright_init_phi,
+                                particles.df20):
+            si = int(np.argmin(np.linalg.norm(sites - np.asarray(bx), axis=1)))
+            pi = int(np.argmin(np.abs(phis_v - bphi)))
+            dmap[pi, si] = df
+
+        fig, axs = plt.subplots(2, 1, figsize=(8, 7), height_ratios=[2, 1.2])
+        im = axs[0].pcolormesh(np.arange(1, len(sites) + 1), np.degrees(phis_v),
+                               dmap, cmap='hot', shading='nearest')
+        fig.colorbar(im, ax=axs[0], label='$d_\\mathrm{20}$')
+        axs[0].set_xlabel('Place referring to picture below')
+        axs[0].set_ylabel('Initial phase [deg]')
+        axs[0].set_title(f'Distance map $d_{{20}}$   '
+                         f'$E_\\mathrm{{pk}}$ = {epks_v[epk_i] * self.Epk * 1e-6:.1f} MV/m')
+
+        axs[1].plot(boundary[:, 0], boundary[:, 1], 'r', lw=1)
+        axs[1].plot(sites[:, 0], sites[:, 1], 'o', mfc='none', mec='b', ms=5)
+        for k, (sz, sr) in enumerate(sites):
+            axs[1].annotate(str(k + 1), (sz, sr), fontsize=7)
+        axs[1].set_xlabel('z [m]')
+        axs[1].set_ylabel('r [m]')
+        axs[1].set_aspect('equal', 'box')
+        axs[1].set_title('Initial points')
+        fig.tight_layout()
+        plt.show()
 
     def get_sey(self):
         return self.sey
@@ -792,6 +787,10 @@ class Domain:
         plt.show()
 
     def plot_trajectories(self):
+        if not self.particles_objects:
+            print("No results to plot -- run analyse_multipacting first "
+                  "(or load results with load_multipacting_result).")
+            return
 
         # create plot
         # fig, axs = plt.subplot_mosaic([[0, 1, 2]], figsize=(11, 4), layout='constrained')
@@ -818,15 +817,19 @@ class Domain:
             else:
                 w_slider.max = len(self.particles_objects[epk_i.new].bright_set) - 1
 
-        # Create slider widgets
-        epk_i_slider = IntSlider(min=0, max=len(self.particles_objects), step=1, description='epk_i:',
-                                 layout=Layout(width='50%'), value=83)
-        print(len(self.particles_objects))
+        # Create slider widgets. max is the last valid INDEX (was off by one and
+        # raised IndexError at the top of the slider); start values are clamped
+        # to the actual result size instead of being hardcoded.
+        n_epks = len(self.particles_objects)
+        epk_i_slider = IntSlider(min=0, max=n_epks - 1, step=1, description='epk_i:',
+                                 layout=Layout(width='50%'),
+                                 value=min(83, n_epks - 1))
         # Observe changes in the value attribute of epk_i_slider and update w_slider accordingly
         epk_i_slider.observe(update_w_max, names='value')
-        w_slider = IntSlider(min=-1, max=len(self.particles_objects[epk_i_slider.value].bright_set) - 1,
+        n_bright0 = len(self.particles_objects[epk_i_slider.value].bright_set)
+        w_slider = IntSlider(min=-1, max=n_bright0 - 1,
                              description='w:',
-                             layout=Layout(width='50%'), value=28)
+                             layout=Layout(width='50%'), value=min(28, n_bright0 - 1))
 
         axs[0].set_xlabel('z [mm]')
         axs[0].set_ylabel('r [mm]')
@@ -886,12 +889,30 @@ class Domain:
         return np.array(selected_values)
 
 
+class _TableInterp:
+    """Picklable linear table interpolation (multiprocessing passes SEY through
+    process arguments, so a lambda/closure would break the parallel path)."""
+
+    def __init__(self, x, y):
+        self.x = np.asarray(x, dtype=float)
+        self.y = np.asarray(y, dtype=float)
+
+    def __call__(self, xq):
+        return np.interp(xq, self.x, self.y)
+
+
 class SEY:
     def __init__(self, sey_filepath):
-        self.data = pd.read_csv(sey_filepath, delim_whitespace=True, header=None, names=["E", "sey"])
+        self.data = pd.read_csv(sey_filepath, sep=r'\s+', engine='python', header=None, names=["E", "sey"])
         self.Emax = max(self.data['E'])
         self.Emin = min(self.data['E'])
-        self.sey = CubicSpline(self.data['E'], self.data['sey'])
+        # LINEAR table interpolation (as MultiPac treats secy files). The
+        # previous CubicSpline oscillated to ~1e6 inside the huge gap between
+        # the last dense data point (~1.9 keV) and the 1e12 eV sentinel row,
+        # poisoning the recorded secondary yields (and hence e20/c0) for any
+        # impact above ~1.9 keV. sey values are recorded diagnostics only --
+        # they never feed back into the particle dynamics.
+        self.sey = _TableInterp(self.data['E'], self.data['sey'])
 
 
 class EMField:

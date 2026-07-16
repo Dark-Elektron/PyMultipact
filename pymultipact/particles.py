@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
+from scipy.spatial import cKDTree
 import scipy
 
 q0 = 1.60217663e-19
@@ -25,6 +26,9 @@ class Particles:
         M = len(phi)
 
         self.bounds = np.array(bounds)
+        # KD-tree over the fixed surface points; nearest-surface queries used to
+        # be an O(N_particles x N_surf) distance matrix + full argsort per call.
+        self._bounds_tree = cKDTree(self.bounds)
         # self.show_initial_points(xrange, step)
 
         self.x = self.bounds[(self.bounds[:, 0] > xrange[0]) & (self.bounds[:, 0] < xrange[1])]
@@ -38,6 +42,11 @@ class Particles:
 
         shape = self.x.shape
         self.len = len(self.x)
+        # number of emission sites (before tiling over phases); particle index
+        # i corresponds to site i % n_sites and phase i // n_sites
+        self.n_sites = self.len
+        self.phis_v = np.asarray(phi)
+        self.sites_init = self.x.copy()   # emission sites, immune to removals
 
         # get normal pointing inwards of emission points
         self.pt_normals = np.ones(self.x.shape)
@@ -87,6 +96,16 @@ class Particles:
 
         self.bright_set = []
         self.shadow_set = []
+        # per-bright-particle impact history, archived when a particle reaches
+        # 20 hits (aligned with bright_set). Ef20 / e20 metrics are computed
+        # from these, matching the paper's semantics (zero outside the band).
+        self.bright_E = []
+        self.bright_n_secondaries = []
+        # initial position and phase of each bright particle (aligned with
+        # bright_set) -- identity is otherwise lost at removal; needed for the
+        # distance-function (d20) map and per-site statistics
+        self.bright_init_x = []
+        self.bright_init_phi = []
 
     def save_old(self):
         self.x_old = copy.deepcopy(self.x)
@@ -98,11 +117,15 @@ class Particles:
         self.phi_temp = copy.deepcopy(self.phi)
 
     def distance(self, n):
-        norms = np.linalg.norm(self.x[:, None] - self.bounds, axis=-1)
-        closest_dist_to_surface = norms.min(axis=1)
-        indx = norms.argsort(axis=1).T[0:n, :]
-
-        return np.atleast_2d(closest_dist_to_surface).T, indx.T.tolist()
+        # KD-tree nearest-neighbour query. Returns the same n nearest surface
+        # indices (ascending by distance) as the previous brute-force
+        # argsort, but avoids materialising the full distance matrix.
+        n = min(n, len(self.bounds))
+        dists, idxs = self._bounds_tree.query(self.x, k=n)
+        if n == 1:
+            dists = dists[:, None]
+            idxs = idxs[:, None]
+        return np.atleast_2d(dists[:, 0]).T, idxs.tolist()
 
     def remove(self, ind, bright='no'):
         ind = list(set(ind))
@@ -134,14 +157,20 @@ class Particles:
         # print number of hits of particle before deleting
         self.nhit = np.delete(self.nhit, ind, axis=0)
 
-        if bright != 'yes':
-            # delete hit energy of lost particle
-            indicesList = sorted(ind, reverse=True)
-            for indx in indicesList:
-                if indx < len(self.E):
-                    # removing element by index using pop() function
-                    self.E.pop(indx)
-                    self.n_secondaries.pop(indx)
+        # The impact-history lists MUST shrink together with the particle
+        # arrays for every removal (bright or lost) -- otherwise the indices of
+        # all surviving particles shift and subsequent E[ind].append() writes
+        # into the wrong particle's history. That misalignment accumulated
+        # impacts from many different particles into single lists, exploding
+        # the e20/c0 product metric and misattributing final impact energies.
+        # (Bright particles' histories are archived in update_hit_count before
+        # this is called.)
+        indicesList = sorted(ind, reverse=True)
+        for indx in indicesList:
+            if indx < len(self.E):
+                # removing element by index using pop() function
+                self.E.pop(indx)
+                self.n_secondaries.pop(indx)
 
     def colors(self):
         return self.colors
@@ -179,6 +208,13 @@ class Particles:
         for ind in inds:
             if self.nhit[ind] == 20:
                 self.bright_set.append(self.paths[[ii * len(self.x) + np.array(ind) for ii in range(self.paths_count)]])
+                # archive this particle's impact history and initial identity
+                # (aligned with bright_set) before it is removed from the live
+                # arrays
+                self.bright_E.append(self.E[ind])
+                self.bright_n_secondaries.append(self.n_secondaries[ind])
+                self.bright_init_x.append(self.x_init[ind].copy())
+                self.bright_init_phi.append(float(self.phi_init[ind, 0]))
                 # remove the index from main set
                 self.remove([ind], bright='yes')
                 removed_inds.append(ind)
