@@ -162,3 +162,4 @@ cython_debug/
 C3795
 TESLA
 pymultipact/test.py
+.conda/

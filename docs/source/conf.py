@@ -49,21 +49,24 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'matplotlib.sphinxext.mathmpl',
     'sphinx.ext.autosectionlabel',
-    'sphinxcontrib.matlab'
-    # 'sphinxcontrib.bibtex'
+    'myst_nb',                      # render Jupyter notebook examples
+    'sphinx_immaterial',            # Material theme (also an extension)
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-bibtex_bibfiles = ['../references/refs.bib']
-# primary_domain = "mat"
-print(os.path.dirname(os.path.abspath(r'D:\Dropbox\PyMultipact\pymultipact\matlab')))
-matlab_src_dir = os.path.dirname(os.path.abspath(r'D:\Dropbox\PyMultipact\pymultipact\matlab'))
+
+# Notebook rendering: keep the executed outputs stored in the .ipynb files
+# (full multipacting runs are too heavy to execute during a docs build).
+nb_execution_mode = 'off'
+
+# Let autodoc import the package on machines/CI without the FEM stack.
+autodoc_mock_imports = ['ngsolve', 'netgen']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = ['**.ipynb_checkpoints']
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -72,9 +75,41 @@ exclude_patterns = []
 # a list of builtin themes.
 #
 # html_theme = 'alabaster'
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_immaterial'
+# html_theme = 'sphinx_rtd_theme'
 # html_theme = 'sphinxdoc'
 # html_theme = 'bootstrap'
+
+html_theme_options = {
+    "site_url": "https://dark-elektron.github.io/PyMultipact/",
+    "repo_url": "https://github.com/Dark-Elektron/PyMultipact",
+    "repo_name": "PyMultipact",
+    "icon": {"repo": "fontawesome/brands/github"},
+    "palette": [
+        {
+            "media": "(prefers-color-scheme: light)",
+            "scheme": "default",
+            "primary": "indigo",
+            "accent": "deep-orange",
+            "toggle": {"icon": "material/weather-night",
+                       "name": "Switch to dark mode"},
+        },
+        {
+            "media": "(prefers-color-scheme: dark)",
+            "scheme": "slate",
+            "primary": "indigo",
+            "accent": "deep-orange",
+            "toggle": {"icon": "material/weather-sunny",
+                       "name": "Switch to light mode"},
+        },
+    ],
+    "features": [
+        "navigation.top",
+        "navigation.sections",
+        "toc.follow",
+        "content.code.copy",
+    ],
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

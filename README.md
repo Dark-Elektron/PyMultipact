@@ -3,12 +3,24 @@
 Multipacting is a phenomenon arising from the emission and subsequent multiplication of charged 
 particles in accelerating radiofrequency (RF) cavities, which can limit the achievable RF power. 
 Predicting field levels at which multipacting occurs is crucial for optimising cavity geometries. 
-This paper presents an open-source Python code (PyMultipact) for analysing multipacting 
+PyMultipact is an open-source Python code for analysing multipacting 
 in 2D axisymmetric cavity structures. The code leverages the NGSolve framework to solve the 
 Maxwell eigenvalue problem (MEVP) for the electromagnetic (EM) fields in axisymmetric RF structures.
 The relativistic Lorentz force equation governing the motion of charged particles is then integrated 
 using the calculated fields within the domain to describe the motion of charged particles. 
-Benchmarking against existing multipacting analysis tools is performed to validate the code's accuracy.
+Benchmarking against existing multipacting analysis tools (MultiPac) validates the code's accuracy —
+see the [IPAC'24 paper (MOPS27)](https://doi.org/10.18429/JACoW-IPAC2024-MOPS27).
+
+**Documentation** (theory, implementation notes, worked example):
+<https://dark-elektron.github.io/PyMultipact/>
+
+Highlights:
+
+- internal eigenmode solver (NGSolve, 3rd-order Nédélec elements) — no external field import needed,
+- counter function, enhanced counter function, final impact energy and distance-map metrics,
+- field-level sweep parallelised over CPU cores by default,
+- selectable collision loss models (`'field'`, `'wait'`, `'always'`),
+- MultiPac-compatible counter normalisation (`plot_cf(launchable_norm=True)`).
 
 # Workflow
 
@@ -100,6 +112,34 @@ domain.plot_ef()  # to plot enhanced counter function
 ```
 
 The results can be compared with the result obtained in  [[2]](#2).
+
+Notes:
+
+- `analyse_multipacting` runs the field sweep in **parallel by default**
+  (`proc_count=None` picks the core count automatically; `proc_count=1` runs in-process).
+  On Windows, plain scripts (not notebooks) must call it under `if __name__ == '__main__':`.
+- Use `domain.plot_cf(launchable_norm=True)` to plot the counter function in
+  MultiPac's normalisation (only launchable initial electrons counted in c0).
+- `domain.plot_df(epk_i)` renders a MultiPac-style distance-function map
+  (initial phase × emission site) for one field level of the sweep.
+
+# Tests
+
+```bash
+python -m pytest -q               # full suite incl. tracking regressions (~2 min)
+python -m pytest -q -m "not slow" # fast unit tests only (~2 s)
+```
+
+# Building the documentation
+
+The documentation (theory, implementation notes and a worked TESLA example
+notebook) is built with Sphinx and deployed to GitHub Pages by
+`.github/workflows/docs.yml` on every push to `main`. To build locally:
+
+```bash
+pip install sphinx myst-nb sphinx-immaterial numpydoc
+sphinx-build -b html docs/source docs/build/html
+```
 
 ## References
 <a id="1">[1]</a> 

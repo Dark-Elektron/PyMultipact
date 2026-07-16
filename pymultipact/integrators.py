@@ -69,12 +69,25 @@ class _ParticleDummy:
 
 
 class Integrators:
-    def __init__(self, mesh, w, bounding_rect):
+    def __init__(self, mesh, w, bounding_rect, loss_model='field'):
         self.mesh = mesh
         self.w = w
         self.fig, self.ax = plt.subplots()
 
         self.zmin, self.zmax, self.rmin, self.rmax = bounding_rect
+
+        # What happens to an electron that impacts the wall while the surface
+        # electric field points the wrong way (E.n < 0, a secondary could not
+        # leave):
+        #   'field'  -- absorb it (paper behaviour, default)
+        #   'wait'   -- re-emit it uncounted; it is pushed back to the wall and
+        #               retries until the RF phase turns favourable
+        #               (approximates MultiPac-style delayed re-emission)
+        #   'always' -- re-emit AND count the impact (upper bound)
+        if loss_model not in ('field', 'wait', 'always'):
+            raise ValueError(f"loss_model must be 'field', 'wait' or 'always', "
+                             f"got {loss_model!r}")
+        self.loss_model = loss_model
 
     def forward_euler(self, particles, tn, h, em, scale, sey):
         ku1 = h * self.lorentz_force(particles, tn, em, scale)
@@ -339,6 +352,7 @@ class Integrators:
     def rk4(self, particles, tn, h, em, scale, sey):
         lpi_all = []
         rpi_all = []
+        spi_all = []   # soft-reflected ('wait' model): masked but uncounted
         lpi_rpi_all = []
 
         mask = np.ones(len(particles.x), dtype=bool)
@@ -376,10 +390,11 @@ class Integrators:
 
         except Exception as e:
             # print('EXCEPTION1:: ')
-            lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
+            lpi, rpi, spi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
             lpi_all.extend(lpi)
             rpi_all.extend(rpi)
-            lpi_rpi_all = lpi_all + rpi_all
+            spi_all.extend(spi)
+            lpi_rpi_all = lpi_all + rpi_all + spi_all
 
             if len(lpi_rpi_all) != 0:
                 mask[np.sort(lpi_rpi_all)] = False
@@ -404,11 +419,12 @@ class Integrators:
             kx3[mask] += h * (particles_dummy.u[mask])
         except Exception as e:
             # print('EXCEPTION2:: ')
-            lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
+            lpi, rpi, spi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
             lpi_all.extend(lpi)
             rpi_all.extend(rpi)
+            spi_all.extend(spi)
 
-            lpi_rpi_all = lpi_all + rpi_all
+            lpi_rpi_all = lpi_all + rpi_all + spi_all
             if len(lpi_rpi_all) != 0:
                 mask[np.sort(lpi_rpi_all)] = False
 
@@ -433,11 +449,12 @@ class Integrators:
         except Exception as e:
             # print('EXCEPTION3:: ', mask, len(particles.x), lpi_rpi_all)
             # print(particles_dummy.x, len(particles_dummy.x))
-            lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
+            lpi, rpi, spi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
             lpi_all.extend(lpi)
             rpi_all.extend(rpi)
+            spi_all.extend(spi)
 
-            lpi_rpi_all = lpi_all + rpi_all
+            lpi_rpi_all = lpi_all + rpi_all + spi_all
             # print(mask, lpi, rpi, lpi_all, rpi_all, lpi_rpi_all)
             if len(lpi_rpi_all) != 0:
                 mask[np.sort(lpi_rpi_all)] = False
@@ -457,11 +474,12 @@ class Integrators:
 
         # print("dummy particle", len(particles_dummy.x), '\n', particles_dummy.x)
         # check for lost particles
-        lpi, rpi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
+        lpi, rpi, spi = self.hit_bound(particles, particles_dummy, mask, tn, h, em, scale, sey)
         lpi_all.extend(lpi)
         rpi_all.extend(rpi)
+        spi_all.extend(spi)
 
-        lpi_rpi_all = lpi_all + rpi_all
+        lpi_rpi_all = lpi_all + rpi_all + spi_all
         if len(lpi_rpi_all) != 0:
             mask[np.sort(lpi_rpi_all)] = False
 
@@ -550,6 +568,7 @@ class Integrators:
 
         lost_particles_indx = []
         reflected_particles_indx = []
+        soft_reflected_indx = []   # 'wait' model: re-launched, not counted
         for ind, r, idx in zip(ind_[0], res, indx):
             #             if r < 5e-2 and mask[ind]:  # point at boundary, calculate new field value
             if r < c0 * dt and mask[ind]:  # point at boundary, calculate new field value
@@ -591,20 +610,20 @@ class Integrators:
                     # self.ax.plot(np.array(line22).T[0], np.array(line22).T[1], c='g', marker='o', zorder=20000)
 
                     e_dot_surf_norm = np.dot(e.real, line22_normal)
+
+                    # impact energy from the velocity advanced to the wall
+                    # (needed by every loss model)
+                    particles_dummy.u_temp[ind] = (particles_dummy.u_old[ind] +
+                                                   q0 / m0 * np.sqrt(1 - (self.norm([particles_dummy.u_old[ind]]) / c0) ** 2) *
+                                                   (e.real + self.cross([particles_dummy.u_old[ind]], b.real) -
+                                                    (1 / c0 ** 2) * (self.dot([particles_dummy.u_old[ind]], e.real) *
+                                                                     particles_dummy.u_old[ind])) * dt * dt_frac)
+                    umag = np.linalg.norm(particles_dummy.u_temp[ind])
+                    gamma = 1 / (np.sqrt(1 - (umag / c0) ** 2))
+                    Eq = (gamma - 1) * m0 * c0 ** 2 * 6.241509e18  # 6.241509e18 Joules to eV factor
+
                     if e_dot_surf_norm >= 0:
-                        particles_dummy.u_temp[ind] = (particles_dummy.u_old[ind] +
-                                                       q0 / m0 * np.sqrt(1 - (self.norm([particles_dummy.u_old[ind]]) / c0) ** 2) *
-                                                       (e.real + self.cross([particles_dummy.u_old[ind]], b.real) -
-                                                        (1 / c0 ** 2) * (self.dot([particles_dummy.u_old[ind]], e.real) *
-                                                                         particles_dummy.u_old[ind])) * dt * dt_frac)
-
-                        # check if conditions support secondary electron yield
-                        # calculate electron energy
-                        umag = np.linalg.norm(particles_dummy.u_temp[ind])
-                        gamma = 1 / (np.sqrt(1 - (umag / c0) ** 2))
-                        # pm = gamma * m0 * umag
-                        Eq = (gamma - 1) * m0 * c0 ** 2 * 6.241509e18  # 6.241509e18 Joules to eV factor
-
+                        # favourable surface field: secondary leaves the wall.
                         # update main particles array
                         particles.E[ind].append(Eq)
 
@@ -626,8 +645,27 @@ class Integrators:
 
                         particles.x[ind] = x_intc_p + particles.u[ind] * dt * (1 - dt_frac)
                         reflected_particles_indx.append(ind)
-                    else:
+                    elif self.loss_model == 'field':
+                        # unfavourable surface field: absorb (paper behaviour)
                         lost_particles_indx.append(ind)
+                    else:
+                        # 'wait' / 'always': do not absorb. Re-launch from the
+                        # impact point along the inward normal (no field kick --
+                        # the unfavourable field simply pushes it back to the
+                        # wall until the RF phase turns favourable).
+                        u_emission = line22_normal * particles.init_v
+                        particles.u[ind] = u_emission
+                        particles.x[ind] = x_intc_p + u_emission * dt * (1 - dt_frac)
+                        if self.loss_model == 'always':
+                            # count the impact and record its energy
+                            particles.E[ind].append(Eq)
+                            if sey.Emin < Eq < sey.Emax:
+                                particles.n_secondaries[ind].append(float(sey.sey(Eq)))
+                            else:
+                                particles.n_secondaries[ind].append(0)
+                            reflected_particles_indx.append(ind)
+                        else:  # 'wait': uncounted retry
+                            soft_reflected_indx.append(ind)
 
         # finally check if particle is at the other boundaries not the wall surface
         # (vectorised; same set of indices as the previous per-particle loop --
@@ -638,7 +676,7 @@ class Integrators:
         lost_particles_indx.extend(
             np.nonzero((px[:, 0] <= self.zmin) | (px[:, 0] >= self.zmax))[0].tolist())
 
-        return lost_particles_indx, reflected_particles_indx
+        return lost_particles_indx, reflected_particles_indx, soft_reflected_indx
 
     @staticmethod
     def cross(a, b):

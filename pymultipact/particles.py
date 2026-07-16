@@ -237,7 +237,7 @@ class Particles:
         -------
 
         """
-        return cm.get_cmap(name, n)
+        return plt.get_cmap(name, n)
 
     @staticmethod
     def _select_values_with_step(values, step):

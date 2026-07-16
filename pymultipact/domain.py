@@ -23,7 +23,8 @@ c0 = 299792458
 
 
 class Domain:
-    def __init__(self, project, boundary_file=None, field=None, **kwargs):
+    def __init__(self, project, boundary_file=None, field=None,
+                 n_boundary_points=250, **kwargs):
         """
 
         Parameters
@@ -34,11 +35,20 @@ class Domain:
             Boundary file path
         field: bytearray
             Field to be loaded
+        n_boundary_points: int or None
+            Target number of boundary polyline points. Dense boundary files
+            (e.g. tesla_mid_cell.n with ~1830 points; the original is kept as
+            tesla_mid_cell_fine.n) force netgen to anchor a mesh node at every
+            point, producing a needlessly fine surface mesh. With 3rd-order
+            field elements (see compute_fields) ~250 points retain accuracy
+            while shrinking the mesh and the collision surface considerably.
+            None keeps the file's full resolution.
         """
 
         self.cn_c0 = None
         self.bounding_rect = None
         self.project_folder = project.folder
+        self.n_boundary_points = n_boundary_points
 
         self.fig, self.ax = plt.subplots()
         self.Epk = None
@@ -92,10 +102,34 @@ class Domain:
             # read geometry
             cav_geom = pd.read_csv(geopath, header=None, skiprows=3, skipfooter=1,
                                    sep='\s+', engine='python')[[1, 0]]
-            self.boundary = np.array(list(cav_geom.itertuples(index=False, name=None)))
+            self.boundary = self._resample_boundary(
+                np.array(list(cav_geom.itertuples(index=False, name=None))),
+                self.n_boundary_points)
             self.mesh_domain()
         except Exception as e:
             print("Please enter valid geometry path.", e)
+
+    @staticmethod
+    def _resample_boundary(boundary, n_points):
+        """Decimate a dense boundary polyline to ~n_points, keeping ORIGINAL
+        points at uniform arc-length spacing (no new points are invented, so
+        every kept point lies exactly on the design profile). The endpoints and
+        the extreme-coordinate points (z/r min and max, which define the
+        bounding rectangle) are always kept. n_points=None disables."""
+        boundary = np.asarray(boundary)
+        if n_points is None or len(boundary) <= n_points:
+            return boundary
+        seg = np.linalg.norm(np.diff(boundary, axis=0), axis=1)
+        s = np.concatenate([[0.0], np.cumsum(seg)])
+        targets = np.linspace(0.0, s[-1], int(n_points))
+        keep = set(np.clip(np.searchsorted(s, targets), 0, len(boundary) - 1).tolist())
+        keep.update([0, len(boundary) - 1,
+                     int(np.argmin(boundary[:, 0])), int(np.argmax(boundary[:, 0])),
+                     int(np.argmin(boundary[:, 1])), int(np.argmax(boundary[:, 1]))])
+        resampled = boundary[sorted(keep)]
+        print(f"Boundary polyline resampled: {len(boundary)} -> {len(resampled)} points "
+              f"(n_boundary_points=None keeps the full resolution)")
+        return resampled
 
     def define_boundary(self, kind='cavity', name='geodata', **kwargs):
         """
@@ -138,7 +172,9 @@ class Domain:
                 cav_geom = pd.read_csv(f'{self.project_folder}/{name}.n', header=None,
                                        sep='\s+', engine='python')[[1, 0]]
 
-                self.boundary = np.array(list(cav_geom.itertuples(index=False, name=None)))
+                self.boundary = self._resample_boundary(
+                    np.array(list(cav_geom.itertuples(index=False, name=None))),
+                    self.n_boundary_points)
 
             self.mesh_domain()
         except Exception as e:
@@ -259,9 +295,19 @@ class Domain:
         with open(f"{self.project_folder}/mesh.pkl", "wb") as f:
             pickle.dump(self.mesh, f)
 
-    def compute_fields(self):
+    def compute_fields(self, order=3):
+        """Solve the eigenmodes.
+
+        Parameters
+        ----------
+        order: int
+            Finite element order. 3 (default) matches MultiPac's third-order
+            elements and keeps field accuracy on the coarser resampled
+            boundary/mesh; the original code used order=1 on a very dense
+            surface mesh.
+        """
         # define finite element space
-        fes = ng.HCurl(self.mesh, order=1, dirichlet='default')
+        fes = ng.HCurl(self.mesh, order=order, dirichlet='default')
         u, v = fes.TnT()
 
         a = ng.BilinearForm(ng.y * ng.curl(u) * ng.curl(v) * ng.dx).Assemble()
@@ -351,7 +397,8 @@ class Domain:
         pass
 
     def analyse_multipacting(self, mode=1, xrange=None, epks=None, phis=None,
-                             v_init=2, integrator='rk4', step=None, proc_count=None):
+                             v_init=2, integrator='rk4', step=None, proc_count=None,
+                             loss_model='field'):
         """
         Analyse multipacting. The Epk sweep is run in parallel by default.
 
@@ -378,6 +425,12 @@ class Domain:
             Note for Windows scripts: guard the call with
             ``if __name__ == '__main__':`` (multiprocessing spawn requirement);
             notebooks are fine as-is.
+        loss_model: str
+            What happens to an electron impacting the wall while the surface
+            field is unfavourable (E.n < 0): 'field' absorbs it (paper
+            behaviour, default); 'wait' re-emits it uncounted until the RF
+            phase turns favourable (MultiPac-style delayed re-emission);
+            'always' re-emits and counts the impact (upper bound).
 
         Returns
         -------
@@ -442,7 +495,7 @@ class Domain:
             self._analyse_multipacting(0, self.project_folder, self.eigen_freq,
                                        mode, xrange, proc_epks_list[0], phi_v,
                                        v_init, self.sey, self.Epk, step,
-                                       self.bounding_rect)
+                                       self.bounding_rect, loss_model)
         else:
             processes = []
             for p in range(proc_count):
@@ -450,7 +503,7 @@ class Domain:
                                      args=(p, self.project_folder, self.eigen_freq,
                                            mode, xrange, proc_epks_list[p], phi_v,
                                            v_init, self.sey, self.Epk, step,
-                                           self.bounding_rect))
+                                           self.bounding_rect, loss_model))
                 service.start()
                 processes.append(service)
 
@@ -512,7 +565,7 @@ class Domain:
 
     @staticmethod
     def _analyse_multipacting(proc_id, folder, eigen_freq, mode, xrange, procs_epks, phis,
-                              v_init, sey, Epk, step, bounding_rect):
+                              v_init, sey, Epk, step, bounding_rect, loss_model='field'):
         n_init_particles = 1
         # pickle mesh and fields
         with open(f'{folder}/mesh.pkl', 'rb') as f:
@@ -533,7 +586,8 @@ class Domain:
         # lmbda = c0 / (eigen_freq[mode] * 1e6)
 
         w = 2 * np.pi * eigen_freq[mode] * 1e6
-        integrator = Integrators(mesh, w, bounding_rect=bounding_rect)
+        integrator = Integrators(mesh, w, bounding_rect=bounding_rect,
+                                 loss_model=loss_model)
 
         # Field object built once (independent of the Epk sweep value).
         em = EMField(gfu_E, gfu_H)
@@ -659,12 +713,44 @@ class Domain:
     def save_fields(self):
         pass
 
-    def plot_cf(self):
+    def launchable_fraction(self, mode=1):
+        """Fraction of the launched (site, phase) combinations whose surface
+        field at emission allows the electron to leave the wall (E.n >= 0).
+        For a sinusoidal field this is ~0.5: half of all initial phases die on
+        their first impacts. MultiPac's counter function effectively counts
+        only launchable electrons in c0, so to compare against MultiPac divide
+        cn_c0 by this fraction (see plot_cf(launchable_norm=True))."""
+        p0 = (self.particles_objects or [None])[0]
+        gfu_E, mesh = self.gfu_E, self.mesh
+        if p0 is None or gfu_E is None or mesh is None or not hasattr(p0, 'sites_init'):
+            return 0.5  # sinusoidal-field default
+        sites = np.asarray(p0.sites_init)
+        normals = np.asarray(p0.pt_normals[:p0.n_sites])
+        phis = np.asarray(p0.phis_v)
+        fav, tot = 0, 0
+        for sx, nrm in zip(sites, normals):
+            Ec = np.asarray(gfu_E[mode](mesh(float(sx[0]), float(sx[1]))),
+                            dtype=complex).ravel()[:2]
+            e_at_phis = np.real(np.outer(np.exp(1j * phis), Ec))  # (n_phis, 2)
+            fav += int(np.sum(e_at_phis @ nrm >= 0))
+            tot += len(phis)
+        return fav / tot if tot else 0.5
+
+    def plot_cf(self, launchable_norm=False):
+        """Counter function. launchable_norm=True divides by the fraction of
+        launchable initial electrons (E.n >= 0 at emission, ~0.5), which is the
+        normalisation MultiPac's c20/c0 effectively uses."""
+        cf = np.asarray(self.cn_c0, dtype=float)
+        label = '$c_\\mathrm{20}/c_\\mathrm{0}$'
+        if launchable_norm:
+            frac = self.launchable_fraction()
+            cf = cf / frac
+            label += f'  (launchable norm, /{frac:.2f})'
         fig, ax = plt.subplots()
-        ax.plot(self.epks_v * self.Epk * 1e-6, self.cn_c0)
+        ax.plot(self.epks_v * self.Epk * 1e-6, cf)
         ax.set_ylim(bottom=0)
         ax.set_xlabel('$E_\mathrm{pk}$ [MV/m]')
-        ax.set_ylabel('$c_\mathrm{20}/c_\mathrm{0}$')
+        ax.set_ylabel(label)
         plt.show()
 
     def plot_Ef(self):

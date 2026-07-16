@@ -28,6 +28,14 @@ pymultipact.integrators module
    :undoc-members:
    :show-inheritance:
 
+pymultipact.field\_interpolator module
+--------------------------------------
+
+.. automodule:: pymultipact.field_interpolator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pymultipact.main module
 -----------------------
 

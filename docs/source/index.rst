@@ -19,6 +19,14 @@ Introduction
    theory
    implementation
 
+Examples
+========
+.. toctree::
+   :maxdepth: 2
+   :caption: Examples
+
+   examples/tesla_multipacting
+
 Modules
 ========
 .. toctree::
